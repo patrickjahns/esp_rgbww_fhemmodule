@@ -82,7 +82,7 @@ LedController_Set(@) {
   my ($ledDevice, $name, $cmd, @args) = @_;
   my $descriptor = '';
   
-  return "Unknown argument $cmd, choose one of HSB, RGB, update" if ($cmd eq '?');
+  return "Unknown argument $cmd, choose one of HSB RGB update" if ($cmd eq '?');
 
   Log3 ($ledDevice, 5, "$ledDevice->{NAME} called with $cmd ");
   
@@ -108,7 +108,12 @@ LedController_Set(@) {
     readingsBulkUpdate($ledDevice, 'HSB', "$h,$s,$b");
     readingsEndUpdate($ledDevice, 1);
   } elsif ($cmd = 'RGB') {
-      my ($r, $g, $b) = split ",", $args[0];
+      print "*** $args[0]/n";
+      # my ($r, $g, $b) = split ",", $args[0];
+      my $r = hex(substr($args[0],0,2))*4;
+      my $g = hex(substr($args[0],2,2))*4;
+      my $b = hex(substr($args[0],4,2))*4;
+
       LedController_SetRGBColor($ledDevice, $r, $g, $b);
   } elsif ($cmd = 'update') {
     LedController_GetHSBColor($ledDevice);
