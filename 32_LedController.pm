@@ -477,6 +477,10 @@ LedController_RGB2HSV(@) {
     #my $r = hex substr($in, 0, 2);
     #my $g = hex substr($in, 2, 2);
     #my $b = hex substr($in, 4, 2);
+    $r=$r*1023/255;
+    $g=$g*1023/255;
+    $b=$b*1023/255;
+
     my ($max, $min, $delta);
     my ($h, $s, $v);
 
@@ -487,7 +491,7 @@ LedController_RGB2HSV(@) {
     $min = $g if (($g <= $r) && ($g <= $b));
     $min = $b if (($b <= $r) && ($b <= $g));
 
-    $v = int(($max / 2.55) + 0.5);
+    $v = int(($max / 10.23) + 0.5);
     $delta = $max - $min;
 
     my $currentHue = ReadingsVal($ledDevice->{NAME}, "hue", 0);
