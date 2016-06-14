@@ -122,19 +122,32 @@ LedController_Set(@) {
       # built in to the firmware.
       #
 
-      print "*** $args[0]\n";
-      # my ($r, $g, $b) = split ",", $args[0];
-      my $r = hex(substr($args[0],0,2))*4;
-      my $g = hex(substr($args[0],2,2))*4;
-      my $b = hex(substr($args[0],4,2))*4;
-      LedController_SetRGBColor($ledDevice, $r, $g, $b);
-      readingsBeginUpdate($ledDevice);
-      if ($r + $g + $g eq 0) {
+        print "*** $args[0]\n";
+        # my ($r, $g, $b) = split ",", $args[0];
+        my $r = hex(substr($args[0],0,2))*4;
+        my $g = hex(substr($args[0],2,2))*4;
+        my $b = hex(substr($args[0],4,2))*4;
+
+        if (defined $args[1]) {
+            my $t = $args[1];
+            my $q = 'false';
+            my $d = 1;
+            if (defined $args[2]) {
+                $q = ($args[2] =~ m/.*[qQ].*/)?'true':'false';
+                $d = ($args[2] =~ m/.*[lL].*/)?0:1;  
+            }
+            LedController_SetRGBasHSVColor($ledDevice, $r, $g, $b, 2700, $t, 'fade', $q, $d);
+        } else {
+            LedController_SetRGBasHSVColor($ledDevice, $r, $g, $b, 2700, 0, 'solid', 'false', 0);
+        }
+
+        readingsBeginUpdate($ledDevice);
+        if ($r + $g + $g eq 0) {
         readingsBulkUpdate($ledDevice, 'state', 'off');
         }else{
             readingsBulkUpdate($ledDevice, 'state', 'on');
         }
-    readingsEndUpdate($ledDevice,1);
+        readingsEndUpdate($ledDevice,1);
 
 
   } elsif ($cmd eq 'on') {
@@ -380,6 +393,58 @@ LedController_SetRGBColor(@) {
     }
 }
 
+sub LedController_SetRGBasHSVColor(@) {
+    my ($ledDevice, $r, $g, $b, $ct, $t, $c, $q, $d)=@_;
+    my $ip = $ledDevice->{IP};
+    my $data;
+    my $cmd;
+
+    my ($h, $s, $v) = LedController_RGB2HSV($ledDevice, $r, $g, $b);
+
+    $cmd->{hsv}->{h}  = $h;
+    $cmd->{hsv}->{s}  = $s;
+    $cmd->{hsv}->{v}  = $b;
+    $cmd->{hsv}->{ct} = $ct;
+    $cmd->{cmd}       = $c;
+    $cmd->{t}         = $t;
+    $cmd->{q}         = $q;
+    $cmd->{d}         = $d;
+    eval { 
+        $data = JSON->new->utf8(1)->encode($cmd);
+    };
+    if ($@) {
+        Log3 ($ledDevice, 2, "$ledDevice->{NAME}: error encoding HSB color request $@");
+    } else {
+        print "*** $data \n";
+
+        my $param = {
+            url        => "http://$ip/color?mode=HSV",
+            data       => $data,
+            timeout    => 30,
+            hash       => $ledDevice,
+            method     => "POST",
+            header     => "User-Agent: fhem\r\nAccept: application/json",
+            callback   =>  \&LedController_ParseSetHSBColor
+        };
+        Log3 ($ledDevice, 4, "$ledDevice->{NAME}: set HSB color request ");
+        HttpUtils_NonblockingGet($param);
+        readingsBeginUpdate($ledDevice);
+        readingsBulkUpdate($ledDevice, 'hue', $h);
+        readingsBulkUpdate($ledDevice, 'sat', $s);
+        readingsBulkUpdate($ledDevice, 'bri', $b);
+        readingsBulkUpdate($ledDevice, 'ct', 2700);
+        readingsBulkUpdate($ledDevice, 'HSB', "$h,$s,$b");
+        if($b=0) {
+            readingsBulkUpdate($ledDevice, 'state', 'off');
+        }else{
+            readingsBulkUpdate($ledDevice, 'state', 'on');
+        }
+        readingsEndUpdate($ledDevice, 1);
+
+    }
+    return undef;
+}
+
 sub
 LedController_ParseSetRGBColor(@) {
     my ($param, $err, $data) = @_;
@@ -407,16 +472,48 @@ LedController_ParseSetRGBColor(@) {
 } 
 
 sub
+LedController_RGB2HSV(@) {
+    my ($ledDevice, $r, $g, $b) = @_;
+    #my $r = hex substr($in, 0, 2);
+    #my $g = hex substr($in, 2, 2);
+    #my $b = hex substr($in, 4, 2);
+    my ($max, $min, $delta);
+    my ($h, $s, $v);
+
+    $max = $r if (($r >= $g) && ($r >= $b));
+    $max = $g if (($g >= $r) && ($g >= $b));
+    $max = $b if (($b >= $r) && ($b >= $g));
+    $min = $r if (($r <= $g) && ($r <= $b));
+    $min = $g if (($g <= $r) && ($g <= $b));
+    $min = $b if (($b <= $r) && ($b <= $g));
+
+    $v = int(($max / 2.55) + 0.5);
+    $delta = $max - $min;
+
+    my $currentHue = ReadingsVal($ledDevice->{NAME}, "hue", 0);
+    return ($currentHue, 0, $v) if (($max == 0) || ($delta == 0));
+
+    $s = int((($delta / $max) *100) + 0.5);
+    $h = ($g - $b) / $delta if ($r == $max);
+    $h = 2 + ($b - $r) / $delta if ($g == $max);
+    $h = 4 + ($r - $g) / $delta if ($b == $max);
+    $h = int(($h * 60) + 0.5);
+    $h += 360 if ($h < 0);
+    return $h, $s, $v;
+}
+
+
+sub
 LedController_ParseSetHSBColor(@) {
 
-  my ($param, $err, $data) = @_;
-  my ($ledDevice) = $param->{hash};
-  my $res;
-  
-  Log3 ($ledDevice, 4, "$ledDevice->{NAME}: got HSB color response");
-  
-  if ($err) {
-    Log3 ($ledDevice, 2, "$ledDevice->{NAME}: error $err setting HSB color");
+my ($param, $err, $data) = @_;
+my ($ledDevice) = $param->{hash};
+my $res;
+
+Log3 ($ledDevice, 4, "$ledDevice->{NAME}: got HSB color response");
+
+if ($err) {
+Log3 ($ledDevice, 2, "$ledDevice->{NAME}: error $err setting HSB color");
   } elsif ($data) {
     Log3 ($ledDevice, 5, "$ledDevice->{NAME}: HSB color response data $data");
     eval { 
