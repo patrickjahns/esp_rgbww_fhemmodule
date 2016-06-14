@@ -82,11 +82,12 @@ LedController_Set(@) {
   my ($ledDevice, $name, $cmd, @args) = @_;
   my $descriptor = '';
   
-  return "Unknown argument $cmd, choose one of HSB RGB update" if ($cmd eq '?');
+  return "Unknown argument $cmd, choose one of HSB RGB state update on off" if ($cmd eq '?');
 
   Log3 ($ledDevice, 5, "$ledDevice->{NAME} called with $cmd ");
   
   if ($cmd eq 'HSB') {
+
     my ($h, $s, $b) = split ',', $args[0];
     if (defined $args[1]) {
       my $t = $args[1];
@@ -106,16 +107,59 @@ LedController_Set(@) {
     readingsBulkUpdate($ledDevice, 'bri', $b);
     readingsBulkUpdate($ledDevice, 'ct', 2700);
     readingsBulkUpdate($ledDevice, 'HSB', "$h,$s,$b");
+    if($b=0) {
+        readingsBulkUpdate($ledDevice, 'state', 'off');
+    }else{
+        readingsBulkUpdate($ledDevice, 'state', 'on');
+    }
     readingsEndUpdate($ledDevice, 1);
-  } elsif ($cmd = 'RGB') {
-      print "*** $args[0]/n";
+
+  } elsif ($cmd eq 'RGB') {
+
+      print "*** $args[0]\n";
       # my ($r, $g, $b) = split ",", $args[0];
       my $r = hex(substr($args[0],0,2))*4;
       my $g = hex(substr($args[0],2,2))*4;
       my $b = hex(substr($args[0],4,2))*4;
-
       LedController_SetRGBColor($ledDevice, $r, $g, $b);
-  } elsif ($cmd = 'update') {
+      readingsBeginUpdate($ledDevice);
+      if ($r + $g + $g eq 0) {
+        readingsBulkUpdate($ledDevice, 'state', 'off');
+        }else{
+            readingsBulkUpdate($ledDevice, 'state', 'on');
+        }
+    readingsEndUpdate($ledDevice,1);
+
+
+  } elsif ($cmd eq 'on') {
+
+      Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting HSV to 60,0,100 ");
+      LedController_SetHSBColor($ledDevice, 60,0,100,2700,0,'solid','false',0);
+
+      readingsBeginUpdate($ledDevice);
+      readingsBulkUpdate($ledDevice, 'hue', 60);
+      readingsBulkUpdate($ledDevice, 'sat', 0);
+      readingsBulkUpdate($ledDevice, 'bri', 100);
+      readingsBulkUpdate($ledDevice, 'ct', 2700);
+      readingsBulkUpdate($ledDevice, 'HSB', "60,0,100");
+      readingsBulkUpdate($ledDevice, 'state', 'on');
+      readingsEndUpdate($ledDevice, 1);
+
+  } elsif ($cmd eq 'off') {
+
+      Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting HSV to 60,0,0 ");
+      LedController_SetHSBColor($ledDevice, 60,0,0,2700,0,'solid','false',0);
+
+      readingsBeginUpdate($ledDevice);
+      readingsBulkUpdate($ledDevice, 'hue', 60);
+      readingsBulkUpdate($ledDevice, 'sat', 0);
+      readingsBulkUpdate($ledDevice, 'bri', 0);
+      readingsBulkUpdate($ledDevice, 'ct', 2700);
+      readingsBulkUpdate($ledDevice, 'HSB', "60,0,100");
+      readingsBulkUpdate($ledDevice, 'state', 'off');
+      readingsEndUpdate($ledDevice, 1);
+
+  } elsif ($cmd eq 'update') {
     LedController_GetHSBColor($ledDevice);
   }
   return undef;
