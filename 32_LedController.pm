@@ -88,7 +88,7 @@ LedController_Set(@) {
   
   if ($cmd eq 'HSB') {
 
-    my ($h, $s, $b) = split ',', $args[0];
+    my ($h, $s, $v) = split ',', $args[0];
     if (defined $args[1]) {
       my $t = $args[1];
       my $q = 'false';
@@ -97,17 +97,21 @@ LedController_Set(@) {
         $q = ($args[2] =~ m/.*[qQ].*/)?'true':'false';
         $d = ($args[2] =~ m/.*[lL].*/)?0:1;  
       }
-      LedController_SetHSBColor($ledDevice, $h, $s, $b, 2700, $t, 'fade', $q, $d);
+      LedController_SetHSBColor($ledDevice, $h, $s, $v, 2700, $t, 'fade', $q, $d);
     } else {
-      LedController_SetHSBColor($ledDevice, $h, $s, $b, 2700, 0, 'solid', 'false', 0);
+      LedController_SetHSBColor($ledDevice, $h, $s, $v, 2700, 0, 'solid', 'false', 0);
     }
+    my ($r, $g, $b)=LedController_HSV2RGB($h, $s, $v);
+    my $xrgb=sprintf("%02x%02x%02x",$r,$g,$b);
+    print "*** $xrgb";
     readingsBeginUpdate($ledDevice);
     readingsBulkUpdate($ledDevice, 'hue', $h);
     readingsBulkUpdate($ledDevice, 'sat', $s);
-    readingsBulkUpdate($ledDevice, 'bri', $b);
+    readingsBulkUpdate($ledDevice, 'bri', $v);
     readingsBulkUpdate($ledDevice, 'ct', 2700);
-    readingsBulkUpdate($ledDevice, 'HSB', "$h,$s,$b");
-    if($b=0) {
+    readingsBulkUpdate($ledDevice, 'HSB', "$h,$s,$v");
+    readingsBulkUpdate($ledDevice, 'RGB', $xrgb);
+    if($v=0) {
         readingsBulkUpdate($ledDevice, 'state', 'off');
     }else{
         readingsBulkUpdate($ledDevice, 'state', 'on');
@@ -124,9 +128,9 @@ LedController_Set(@) {
 
         print "*** $args[0]\n";
         # my ($r, $g, $b) = split ",", $args[0];
-        my $r = hex(substr($args[0],0,2))*4;
-        my $g = hex(substr($args[0],2,2))*4;
-        my $b = hex(substr($args[0],4,2))*4;
+        my $r = hex(substr($args[0],0,2));
+        my $g = hex(substr($args[0],2,2));
+        my $b = hex(substr($args[0],4,2));
 
         if (defined $args[1]) {
             my $t = $args[1];
@@ -302,12 +306,17 @@ LedController_ParseHSBColor(@) {
     if ($@) {
      Log3 ($ledDevice, 2, "$ledDevice->{NAME}: error decoding HSB color response $@");
     } else {
+      my ($r, $g, $b)=LedController_HSV2RGB($res->{hsv}->{h}, $res->{hsv}->{s},$res->{hsv}->{v});
+      my $xrgb=sprintf("%02x%02x%02x",$r,$g,$b);
+      Log3 ($ledDevice, 5, "$ledDevice->{NAME}: calculated RGB as $xrgb");
+
       readingsBeginUpdate($ledDevice);
       readingsBulkUpdate($ledDevice, 'hue', $res->{hsv}->{h});
       readingsBulkUpdate($ledDevice, 'sat', $res->{hsv}->{s});
       readingsBulkUpdate($ledDevice, 'bri', $res->{hsv}->{v});
       readingsBulkUpdate($ledDevice, 'ct', $res->{hsv}->{ct});
       readingsBulkUpdate($ledDevice, 'HSB', "$res->{hsv}->{h},$res->{hsv}->{s},$res->{hsv}->{v}");
+      readingsBulkUpdate($ledDevice, 'RGB', $xrgb);
       readingsEndUpdate($ledDevice, 1);
     } 
   } else {
@@ -332,7 +341,6 @@ LedController_SetHSBColor(@) {
   $cmd->{t}         = $t;
   $cmd->{q}         = $q;
   $cmd->{d}         = $d;
-  
   
   eval { 
     $data = JSON->new->utf8(1)->encode($cmd);
@@ -398,7 +406,7 @@ sub LedController_SetRGBasHSVColor(@) {
     my $ip = $ledDevice->{IP};
     my $data;
     my $cmd;
-
+    my $xrgb=sprintf("%02x%02x%02x", $r, $g, $b);
     my ($h, $s, $v) = LedController_RGB2HSV($ledDevice, $r, $g, $b);
 
     $cmd->{hsv}->{h}  = $h;
@@ -427,6 +435,7 @@ sub LedController_SetRGBasHSVColor(@) {
             callback   =>  \&LedController_ParseSetHSBColor
         };
         Log3 ($ledDevice, 4, "$ledDevice->{NAME}: set HSB color request ");
+        Log3 ($ledDevice, 5 , "$ledDevice->{NAME}: coverted r:$r, g:$g, b:$b to $xrgb ");
         HttpUtils_NonblockingGet($param);
         readingsBeginUpdate($ledDevice);
         readingsBulkUpdate($ledDevice, 'hue', $h);
@@ -434,6 +443,7 @@ sub LedController_SetRGBasHSVColor(@) {
         readingsBulkUpdate($ledDevice, 'bri', $b);
         readingsBulkUpdate($ledDevice, 'ct', 2700);
         readingsBulkUpdate($ledDevice, 'HSB', "$h,$s,$b");
+        readingsBulkUpdate($ledDevice, 'RGB', $xrgb);
         if($b=0) {
             readingsBulkUpdate($ledDevice, 'state', 'off');
         }else{
@@ -474,9 +484,6 @@ LedController_ParseSetRGBColor(@) {
 sub
 LedController_RGB2HSV(@) {
     my ($ledDevice, $r, $g, $b) = @_;
-    #my $r = hex substr($in, 0, 2);
-    #my $g = hex substr($in, 2, 2);
-    #my $b = hex substr($in, 4, 2);
     $r=$r*1023/255;
     $g=$g*1023/255;
     $b=$b*1023/255;
@@ -506,6 +513,43 @@ LedController_RGB2HSV(@) {
     return $h, $s, $v;
 }
 
+sub
+LedController_HSV2RGB(@)
+{
+    my ($hue, $sat, $val) = @_;
+
+    if ($sat == 0) {
+        return int(($val * 2.55) +0.5), int(($val * 2.55) +0.5), int(($val * 2.55) +0.5);
+    }
+    $hue %= 360;
+    $hue /= 60;
+    $sat /= 100;
+    $val /= 100;
+
+    my $i = int($hue);
+
+    my $f = $hue - $i;
+    my $p = $val * (1 - $sat);
+    my $q = $val * (1 - $sat * $f);
+    my $t = $val * (1 - $sat * (1 - $f));
+
+    my ($r, $g, $b);
+
+    if ( $i == 0 ) {
+        ($r, $g, $b) = ($val, $t, $p);
+    } elsif ( $i == 1 ) {
+        ($r, $g, $b) = ($q, $val, $p);
+    } elsif ( $i == 2 ) {
+        ($r, $g, $b) = ($p, $val, $t);
+    } elsif ( $i == 3 ) {
+        ($r, $g, $b) = ($p, $q, $val);
+    } elsif ( $i == 4 ) {
+        ($r, $g, $b) = ($t, $p, $val);
+    } else {
+        ($r, $g, $b) = ($val, $p, $q);
+    }
+    return (int(($r * 255) +0.5), int(($g * 255) +0.5), int(($b * 255) + 0.5));
+}
 
 sub
 LedController_ParseSetHSBColor(@) {
