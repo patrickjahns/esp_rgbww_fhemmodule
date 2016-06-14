@@ -115,6 +115,12 @@ LedController_Set(@) {
     readingsEndUpdate($ledDevice, 1);
 
   } elsif ($cmd eq 'RGB') {
+      # todo:
+      # the native mode of operation for those controllers is HSV
+      # I am considering to convert RGB into HSV and then set that
+      # this would automatically use the color matching that are
+      # built in to the firmware.
+      #
 
       print "*** $args[0]\n";
       # my ($r, $g, $b) = split ",", $args[0];
