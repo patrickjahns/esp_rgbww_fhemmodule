@@ -8,6 +8,7 @@
 
 # versions
 # 00 POC
+# 01 initial working version
 
 # verbose level
 # 0: quit
@@ -85,7 +86,7 @@ LedController_Set(@) {
   my ($ledDevice, $name, $cmd, @args) = @_;
   my $descriptor = '';
   
-  return "Unknown argument $cmd, choose one of HSV RGB state update HUE SAT VAL on off" if ($cmd eq '?');
+  return "Unknown argument $cmd, choose one of HSV RGB state update HUE SAT VAL on off rotate" if ($cmd eq '?');
 
   Log3 ($ledDevice, 5, "$ledDevice->{NAME} called with $cmd ");
   
@@ -129,19 +130,38 @@ LedController_Set(@) {
             LedController_SetRGBasHSVColor($ledDevice, $r, $g, $b, 2700, 4000, 'fade', 1, 1);
         }
 
+  } elsif ($cmd eq 'rotate'){
+  
+  		my $rot = $args[0];
+  		
+  		my $h=ReadingsVal($ledDevice->{NAME}, "hue", 0);
+  		$h = ($h + $rot)%360;
+
+      my $v = ReadingsVal($ledDevice->{NAME}, "val", 0);
+      my $s = ReadingsVal($ledDevice->{NAME}, "sat", 0);
+      Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting HUE to $h, keeping VAL $v and SAT $s");
+      LedController_SetHSVColor($ledDevice, $h, $s, $v);  		
+  		
   } elsif ($cmd eq 'on') {
 		# Currently, switching the controller "on" sets an arbitrary Hue, a Sat of 0 and 100% Value
 		# todo: define a better default behaviour like 
 		# a) a default on hsv attr or 
 		# b) returning to previous state
 	
-      Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting HSV to 60,0,100 ");
-      LedController_SetHSVColor($ledDevice, 60,0,100,2700,0,'solid','false',0);
+      my $v = 100;
+      my $h = ReadingsVal($ledDevice->{NAME}, "hue", 0);
+      my $s = ReadingsVal($ledDevice->{NAME}, "sat", 0);
+      Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $v, keeping HUE $h and SAT $s");
+      LedController_SetHSVColor($ledDevice, $h, $s, $v);
+
 
   } elsif ($cmd eq 'off') {
 
-      Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting HSV to 60,0,0 ");
-      LedController_SetHSVColor($ledDevice, 60,0,0,2700,0,'solid','false',0);
+      my $v = 0;
+      my $h = ReadingsVal($ledDevice->{NAME}, "hue", 0);
+      my $s = ReadingsVal($ledDevice->{NAME}, "sat", 0);
+      Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $v, keeping HUE $h and SAT $s");
+      LedController_SetHSVColor($ledDevice, $h, $s, $v);
 
   } elsif ($cmd eq 'VAL') {
       
@@ -171,7 +191,6 @@ LedController_Set(@) {
     LedController_GetHSVColor($ledDevice);
   }
   return undef;
-  
 }
 
 sub
@@ -399,7 +418,7 @@ LedController_SetHSVColor(@) {
     Log3 ($ledDevice, 4, "$ledDevice->{NAME}: set HSV color request \n$param");
 
     HttpUtils_NonblockingGet($param);
-    my ($r, $g, $b)=LedController_HSV2RGB($h, $s,$v);
+    my ($r, $g, $b)=LedController_HSV2RGB($h, $s, $v);
       my $xrgb=sprintf("%02x%02x%02x",$r,$g,$b);
       Log3 ($ledDevice, 5, "$ledDevice->{NAME}: calculated RGB as $xrgb");
       Log3 ($ledDevice, 4, "$ledDevice->{NAME}: begin Readings Update\n   hue: $h\n   sat: $s\n   val:$v\n   ct : $ct\n   HSV: $h,$s,$v\n   RGB: $xrgb");
