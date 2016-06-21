@@ -5,7 +5,7 @@ an experimental module for FHEM to drive the esp_rgbww_controllers
 This modul is very experimental. I mean *very*.
 
 ### ToDo:
-* [ ] setting to "on" currently sets the *value* (=brightness) to 100 and keeps the current hue and and saturation. I suggest adding an *attr* to define hsv for "on"
+* [x] setting to "on" currently sets the *value* (=brightness) to 100 and keeps the current hue and and saturation. I suggest adding an *attr* to define hsv for "on"
 * [ ] provide a default transition setting (attr)
 * [ ] check if setExtensions are applicable
 * [ ] check if "color" is applicable
