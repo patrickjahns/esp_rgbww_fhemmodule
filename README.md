@@ -5,8 +5,15 @@ an experimental module for FHEM to drive the esp_rgbww_controllers
 This modul is very experimental. I mean *very*.
 
 ### ToDo:
-* [ ] setting to "on" should fetch the last HSV values and set them rather than setting 60,0,100 (or should it? maybe a default?)
+* [x] setting to "on" currently sets the *value* (=brightness) to 100 and keeps the current hue and and saturation. I suggest adding an *attr* to define hsv for "on"
 * [ ] provide a default transition setting (attr)
+* [ ] check if setExtensions are applicable
+* [ ] check if "color" is applicable
+* [ ] add a "raw r10 g10 b10 ww10 cw10" setting
+* [ ] implement get for r8g8b8, hsl, r10g10b10ww10cw10 - may be dependent on the MQTT interface as I would rather see this as a subscribe than as a REST query
+* [ ] add bounds checking - the code currently doesn't do any checking on the parameters supplied but relies on the underlying code to deal with it. Mixig up text / numerical characters can break things badly
+* [ ] make sure the set commands / readings / internals follow the general convention for capitalization / wording (I've just noticed that, instead of *val*, WifiLight uses *brightness* but doesn't offer it as a separate setting
+* [ ] do we need to do anything for autoconfig? Could we automatically detect Controllers as they join the net? 
 
 ### Links
 
