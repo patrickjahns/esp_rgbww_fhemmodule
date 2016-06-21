@@ -71,7 +71,7 @@ LedController_Define($$) {
   $attr{$hash->{NAME}}{verbose} = 5;
   
   return undef;
-  return "wrong syntax: define <name> LedController <type> <connection>" if(@a != 4);  
+  return "wrong syntax: define <name> LedController <type> <ip-or-hostname>" if(@a != 4);  
   return "$hash->{LEDTYPE} is not supported at $hash->{CONNECTION} ($hash->{IP})";
 }
 
@@ -489,6 +489,12 @@ Log3 ($ledDevice, 2, "$ledDevice->{NAME}: error $err setting HSV color");
 <a name="LedController"></a>
 <h3>LedController</h3>
 <ul>
+<b>Define</b>
+<code>define <name> LedController [<type>] <ip-or-hostname></code>
+<b>Set</b>
+TBD
+<b>Get</b>
+TBD
 </ul>
 
 =end html
@@ -498,6 +504,12 @@ Log3 ($ledDevice, 2, "$ledDevice->{NAME}: error $err setting HSV color");
 <a name="LedController"></a>
 <h3>LedController</h3>
 <ul>
+<b>Define</b>
+<code>define <name> LedController [<type>] <ip-or-hostname></code>
+<b>Set</b>
+TBD
+<b>Get</b>
+TBD
 </ul>
 
 =end html_DE
