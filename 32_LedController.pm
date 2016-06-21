@@ -3,12 +3,13 @@
 
 # TODO
 # I'm fully aware of this http://xkcd.com/1695/
-# set on: provide a better on default
-# make a default transition time configurable throught attr
+# 
+# 
 
 # versions
 # 00 POC
 # 01 initial working version
+# 02 stabilized, transitions working, initial use of attrs
 
 # verbose level
 # 0: quit
@@ -373,8 +374,8 @@ LedController_SetHSVColor(@) {
    	   readingsBulkUpdate($ledDevice, 'sat', $s);
 	      readingsBulkUpdate($ledDevice, 'val', $v);
 	      readingsBulkUpdate($ledDevice, 'ct' , $ct);
-	      readingsBulkUpdate($ledDevice, 'HSV', "$h,$s,$v");
-	      readingsBulkUpdate($ledDevice, 'RGB', $xrgb);
+	      readingsBulkUpdate($ledDevice, 'hsv', "$h,$s,$v");
+	      readingsBulkUpdate($ledDevice, 'rgb', $xrgb);
 	      if($v==0){
 	      	readingsBulkUpdate($ledDevice, 'state', 'off');
 	      }else{
