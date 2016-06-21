@@ -132,7 +132,8 @@ LedController_Set(@) {
 		Log3 ($ledDevice, 5, "$ledDevice->{NAME} defaultColor: $defaultColor");
 		my ($h, $s, $v) = ($defaultColor eq '')?(0,0,100):split(',',$defaultColor );
       Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $v, SAT to $s and HUE $h");
-      my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
+      Log3 ($ledDevice, 5, "$ledDevice->{NAME} args[0] = $args[0], args[1] = $args[1]");
+      my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[0], $args[1]);
       LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
 
 
@@ -142,7 +143,7 @@ LedController_Set(@) {
       my $h = ReadingsVal($ledDevice->{NAME}, "hue", 0);
       my $s = ReadingsVal($ledDevice->{NAME}, "sat", 0);
       Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $v, keeping HUE $h and SAT $s");
-      my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
+      my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[0], $args[1]);
       LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
 
   } elsif ($cmd eq 'val'||$cmd eq "dim") {
@@ -183,17 +184,20 @@ LedController_Set(@) {
 sub
 LedController_ArgsHelper(@) {
 	my ($ledDevice, $a, $b) = @_;	
-	Log3 ($ledDevice, 5, "$ledDevice->{NAME} extended args raw: $a, $b");
+	Log3 ($ledDevice, 5, "$ledDevice->{NAME} extended args raw: a=$a, b=$b");
 	my $t = AttrVal($ledDevice->{NAME}, 'defaultRamp',0);
 	my $q = 'false';
 	my $d = '1';
-	if($a!=''){
-		$t = $a*1000; #the controller expects t in Milliseconds, but most fhem modules specify seconds
-		if ($b!=''){
-			$q = ($b =~m/.*[qQ].*/)?'true':'false';
-			$d = ($b =~ m/.*[lL].*/)?0:1;
+	if($a=~m/[0-9]*/){
+		$t=$a*1000;
+			if ($b ne ''){
+				$q = ($b =~m/.*[qQ].*/)?'true':'false';
+				$d = ($b =~m/.*[lL].*/)?0:1;
+			}		
+		}else{
+			$q = ($a =~m/.*[qQ].*/)?'true':'false';
+			$d = ($a =~m/.*[lL].*/)?0:1;
 		}
-	}
 	Log3 ($ledDevice, 5, "$ledDevice->{NAME} extended args: t = $t, q = $q, d = $d");
 	return ($t, $q, $d);
 }
