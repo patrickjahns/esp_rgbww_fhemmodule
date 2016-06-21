@@ -105,8 +105,8 @@ LedController_Set(@) {
 	   my $r = hex(substr($args[0],0,2));
 	   my $g = hex(substr($args[0],2,2));
 	   my $b = hex(substr($args[0],4,2));
-	
-	   my ($h, $s, $v) = LedController_RGB2HSV($r,$g, $b);
+	   Log3 ($ledDevice, 5, "$ledDevice->{NAME} raw: $args[0], r: $r, g: $g, b: $b");
+	   my ($h, $s, $v) = LedController_RGB2HSV($ledDevice, $r, $g, $b);
 	   my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
 	   LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
 
