@@ -8,7 +8,7 @@ This modul is very experimental. I mean *very*.
 * [ ] setting to "on" currently sets the *value* (=brightness) to 100 and keeps the current hue and and saturation. I suggest adding an *attr* to define hsv for "on"
 * [ ] provide a default transition setting (attr)
 * [ ] check if setExtensions are applicable
-* [ ] scheck if "color" is applicable
+* [ ] check if "color" is applicable
 * [ ] add a "raw r10 g10 b10 ww10 cw10" setting
 * [ ] implement get for r8g8b8, hsl, r10g10b10ww10cw10 - may be dependent on the MQTT interface as I would rather see this as a subscribe than as a REST query
 * [ ] add bounds checking - the code currently doesn't do any checking on the parameters supplied but relies on the underlying code to deal with it. Mixig up text / numerical characters can break things badly
