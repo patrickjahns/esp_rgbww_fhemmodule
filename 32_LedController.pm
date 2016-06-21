@@ -101,7 +101,7 @@ LedController_Set(@) {
       # the native mode of operation for those controllers is HSV
       # I am converting RGB into HSV and then set that
       # This is to make use of the internal color compensation of the controller
-
+		return "RGB is required hex RRGGBB" if (defined($args[0]) && $args[0] !~ /^[0-9A-Fa-f]{6}$/);
 	   my $r = hex(substr($args[0],0,2));
 	   my $g = hex(substr($args[0],2,2));
 	   my $b = hex(substr($args[0],4,2));

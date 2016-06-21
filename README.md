@@ -12,7 +12,9 @@ Please refer to [CONTRIBUTING.md](https://github.com/patrickjahns/esp_rgbww_fhem
 
 ### ToDo:
 * [x] setting to "on" currently sets the *value* (=brightness) to 100 and keeps the current hue and and saturation. I suggest adding an *attr* to define hsv for "on"
-* [ ] provide a default transition setting (attr)
+* [x] provide a default transition setting (attr)
+* [ ] enable updating of attributes (I can't find how that's supposed to be done)
+* [ ] I have enabled defaultColor and colorTemp attributes but not yet put them into use
 * [ ] check if setExtensions are applicable
 * [ ] check if "color" is applicable
 * [ ] add a "raw r10 g10 b10 ww10 cw10" setting
