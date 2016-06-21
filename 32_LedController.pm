@@ -40,7 +40,7 @@ LedController_Initialize(@) {
   $hash->{AttrFn}       = 'LedController_Attr';
   $hash->{NotifyFn}     = 'LedController_Notify';
   $hash->{ReadFn}       = 'LedController_Read';
-  $hash->{AttrList}     = "defaultRamp defaultColor colorTemp"
+  $hash->{AttrList}     = "defaultRamp"
                           ." $readingFnAttributes";
   require "HttpUtils.pm";
   
@@ -71,7 +71,7 @@ LedController_Define($$) {
   $attr{$hash->{NAME}}{verbose} = 5;
   
   return undef;
-  return "wrong syntax: define <name> LedController <type> <connection>" if(@a != 4);  
+  return "wrong syntax: define <name> LedController <type> <ip-or-hostname>" if(@a != 4);  
   return "$hash->{LEDTYPE} is not supported at $hash->{CONNECTION} ($hash->{IP})";
 }
 
@@ -97,6 +97,7 @@ LedController_Set(@) {
 	   LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
    
   } elsif ($cmd eq 'rgb') {
+      # todo:
       # the native mode of operation for those controllers is HSV
       # I am converting RGB into HSV and then set that
       # This is to make use of the internal color compensation of the controller
@@ -126,6 +127,7 @@ LedController_Set(@) {
 		# keeping compatibility with WifiLight, "on" sets the controller to s=0, v=100, that is: 
 		# full bright white.
 		# if you want to keep the hue/sat from before, use "dim" or it's equivalent "val"
+		#
 		
       my $v = 100;
       my $s = 0;
@@ -133,6 +135,7 @@ LedController_Set(@) {
       Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $v, SAT to 0 and keeping HUE $h");
       my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
       LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
+
 
   } elsif ($cmd eq 'off') {
 
@@ -182,12 +185,11 @@ sub
 LedController_ArgsHelper(@) {
 	my ($ledDevice, $a, $b) = @_;	
 	Log3 ($ledDevice, 5, "$ledDevice->{NAME} extended args raw: $a, $b");
-	my $t = AttrVal($ledDevice->{NAME}, 'defaultRamp',0);
+	my $t = 0;
 	my $q = 'false';
 	my $d = '1';
-	if($a ne ''){
+	if($a!=''){
 		$t = $a*1000; #the controller expects t in Milliseconds, but most fhem modules specify seconds
-		Log3($ledDevice, 5, "found valid arg[1]");
 		if ($b!=''){
 			$q = ($b =~m/.*[qQ].*/)?'true':'false';
 			$d = ($b =~ m/.*[lL].*/)?0:1;
@@ -487,6 +489,12 @@ Log3 ($ledDevice, 2, "$ledDevice->{NAME}: error $err setting HSV color");
 <a name="LedController"></a>
 <h3>LedController</h3>
 <ul>
+<b>Define</b>
+<code>define <name> LedController [<type>] <ip-or-hostname></code>
+<b>Set</b>
+TBD
+<b>Get</b>
+TBD
 </ul>
 
 =end html
@@ -496,6 +504,12 @@ Log3 ($ledDevice, 2, "$ledDevice->{NAME}: error $err setting HSV color");
 <a name="LedController"></a>
 <h3>LedController</h3>
 <ul>
+<b>Define</b>
+<code>define <name> LedController [<type>] <ip-or-hostname></code>
+<b>Set</b>
+TBD
+<b>Get</b>
+TBD
 </ul>
 
 =end html_DE
