@@ -3,12 +3,13 @@
 
 # TODO
 # I'm fully aware of this http://xkcd.com/1695/
-# set on: provide a better on default
-# make a default transition time configurable throught attr
+# 
+# 
 
 # versions
 # 00 POC
 # 01 initial working version
+# 02 stabilized, transitions working, initial use of attrs
 
 # verbose level
 # 0: quit
@@ -40,7 +41,7 @@ LedController_Initialize(@) {
   $hash->{AttrFn}       = 'LedController_Attr';
   $hash->{NotifyFn}     = 'LedController_Notify';
   $hash->{ReadFn}       = 'LedController_Read';
-  $hash->{AttrList}     = "defaultRamp"
+  $hash->{AttrList}     = "defaultRamp defaultColor colorTemp"
                           ." $readingFnAttributes";
   require "HttpUtils.pm";
   
@@ -85,30 +86,30 @@ LedController_Set(@) {
 
   my ($ledDevice, $name, $cmd, @args) = @_;
   my $descriptor = '';
-  
+  my $colorTemp = AttrVal($ledDevice->{NAME},'colorTemp',0);
+  $colorTemp = ($colorTemp)?$colorTemp:2700;
   return "Unknown argument $cmd, choose one of hsv rgb state update hue sat val dim on off rotate" if ($cmd eq '?');
 
-  Log3 ($ledDevice, 5, "$ledDevice->{NAME} called with $cmd ");
+  Log3 ($ledDevice, 5, "$ledDevice->{NAME} called with $cmd ");  
   
   if ($cmd eq 'hsv') {
 
       my ($h, $s, $v) = split ',', $args[0];
 	   my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
-	   LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
+	   LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
    
   } elsif ($cmd eq 'rgb') {
-      # todo:
       # the native mode of operation for those controllers is HSV
       # I am converting RGB into HSV and then set that
       # This is to make use of the internal color compensation of the controller
-
+		return "RGB is required hex RRGGBB" if (defined($args[0]) && $args[0] !~ /^[0-9A-Fa-f]{6}$/);
 	   my $r = hex(substr($args[0],0,2));
 	   my $g = hex(substr($args[0],2,2));
 	   my $b = hex(substr($args[0],4,2));
 	   Log3 ($ledDevice, 5, "$ledDevice->{NAME} raw: $args[0], r: $r, g: $g, b: $b");
 	   my ($h, $s, $v) = LedController_RGB2HSV($ledDevice, $r, $g, $b);
 	   my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
-	   LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
+	   LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
 
   } elsif ($cmd eq 'rotate'){
   
@@ -121,20 +122,19 @@ LedController_Set(@) {
       my $s = ReadingsVal($ledDevice->{NAME}, "sat", 0);
       Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting HUE to $h, keeping VAL $v and SAT $s");
       my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
-      LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
+      LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
   		
   } elsif ($cmd eq 'on') {
-		# keeping compatibility with WifiLight, "on" sets the controller to s=0, v=100, that is: 
-		# full bright white.
+		# added an attr "defaultColor" as a h,s,v tupel. This will be used as the default "on" color
 		# if you want to keep the hue/sat from before, use "dim" or it's equivalent "val"
 		#
-		
-      my $v = 100;
-      my $s = 0;
-      my $h = ReadingsVal($ledDevice->{NAME}, "hue", 0);
-      Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $v, SAT to 0 and keeping HUE $h");
-      my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
-      LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
+		my $defaultColor=AttrVal($ledDevice->{NAME},'defaultColor',0);
+		Log3 ($ledDevice, 5, "$ledDevice->{NAME} defaultColor: $defaultColor");
+		my ($h, $s, $v) = ($defaultColor eq '')?(0,0,100):split(',',$defaultColor );
+      Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $v, SAT to $s and HUE $h");
+      Log3 ($ledDevice, 5, "$ledDevice->{NAME} args[0] = $args[0], args[1] = $args[1]");
+      my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[0], $args[1]);
+      LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
 
 
   } elsif ($cmd eq 'off') {
@@ -143,8 +143,8 @@ LedController_Set(@) {
       my $h = ReadingsVal($ledDevice->{NAME}, "hue", 0);
       my $s = ReadingsVal($ledDevice->{NAME}, "sat", 0);
       Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $v, keeping HUE $h and SAT $s");
-      my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
-      LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
+      my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[0], $args[1]);
+      LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
 
   } elsif ($cmd eq 'val'||$cmd eq "dim") {
       
@@ -153,7 +153,7 @@ LedController_Set(@) {
       my $s = ReadingsVal($ledDevice->{NAME}, "sat", 0);
       Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $v, keeping HUE $h and SAT $s");
       my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
-      LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
+      LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
 	        
   } elsif ($cmd eq 'sat') {
       
@@ -162,7 +162,7 @@ LedController_Set(@) {
       my $v = ReadingsVal($ledDevice->{NAME}, "val", 0);
       Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting SAT to $s, keeping HUE $h and VAL $v");
       my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
-      LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
+      LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
 
   } elsif ($cmd eq 'hue') {
       
@@ -173,7 +173,7 @@ LedController_Set(@) {
       my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
       Log3 ($ledDevice, 5, "$ledDevice->{NAME} got extended args: t = $t, q = $q, d=$d");
       
-      LedController_SetHSVColor($ledDevice, $h, $s, $v, 2700, $t, (($t==0)?'solid':'fade'), $q, $d);
+      LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
 
   } elsif ($cmd eq 'update') {
     LedController_GetHSVColor($ledDevice);
@@ -184,17 +184,20 @@ LedController_Set(@) {
 sub
 LedController_ArgsHelper(@) {
 	my ($ledDevice, $a, $b) = @_;	
-	Log3 ($ledDevice, 5, "$ledDevice->{NAME} extended args raw: $a, $b");
-	my $t = 0;
+	Log3 ($ledDevice, 5, "$ledDevice->{NAME} extended args raw: a=$a, b=$b");
+	my $t = AttrVal($ledDevice->{NAME}, 'defaultRamp',0);
 	my $q = 'false';
 	my $d = '1';
-	if($a!=''){
-		$t = $a*1000; #the controller expects t in Milliseconds, but most fhem modules specify seconds
-		if ($b!=''){
-			$q = ($b =~m/.*[qQ].*/)?'true':'false';
-			$d = ($b =~ m/.*[lL].*/)?0:1;
+	if($a=~m/[0-9]*/){
+		$t=$a*1000;
+			if ($b ne ''){
+				$q = ($b =~m/.*[qQ].*/)?'true':'false';
+				$d = ($b =~m/.*[lL].*/)?0:1;
+			}		
+		}else{
+			$q = ($a =~m/.*[qQ].*/)?'true':'false';
+			$d = ($a =~m/.*[lL].*/)?0:1;
 		}
-	}
 	Log3 ($ledDevice, 5, "$ledDevice->{NAME} extended args: t = $t, q = $q, d = $d");
 	return ($t, $q, $d);
 }
@@ -214,7 +217,9 @@ LedController_Attr(@) {
   my ($cmd, $device, $attribName, $attribVal) = @_;
   my $ledDevice = $defs{$device};
 
-
+  if ($cmd eq 'set' && $attribName eq 'colorTemp'){
+  return "colorTemp must be between 2000 and 10000" if ($attribVal <2000 || $attribVal >10000);
+  }
   Log3 ($ledDevice, 4, "$ledDevice->{NAME} attrib $attribName $cmd $attribVal") if $attribVal; 
   return undef;
 }
@@ -373,8 +378,8 @@ LedController_SetHSVColor(@) {
    	   readingsBulkUpdate($ledDevice, 'sat', $s);
 	      readingsBulkUpdate($ledDevice, 'val', $v);
 	      readingsBulkUpdate($ledDevice, 'ct' , $ct);
-	      readingsBulkUpdate($ledDevice, 'HSV', "$h,$s,$v");
-	      readingsBulkUpdate($ledDevice, 'RGB', $xrgb);
+	      readingsBulkUpdate($ledDevice, 'hsv', "$h,$s,$v");
+	      readingsBulkUpdate($ledDevice, 'rgb', $xrgb);
 	      if($v==0){
 	      	readingsBulkUpdate($ledDevice, 'state', 'off');
 	      }else{
