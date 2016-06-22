@@ -186,10 +186,12 @@ LedController_ArgsHelper(@) {
 	my ($ledDevice, $a, $b) = @_;	
 	Log3 ($ledDevice, 5, "$ledDevice->{NAME} extended args raw: a=$a, b=$b");
 	my $t = AttrVal($ledDevice->{NAME}, 'defaultRamp',0);
+	Log3 ($ledDevice, 5, "$ledDevice->{NAME} t= $t");
 	my $q = 'false';
 	my $d = '1';
-	if($a=~m/[0-9]*/){
+	if(LedController_isNumeric($a)){
 		$t=$a*1000;
+		Log3 ($ledDevice, 5, "$ledDevice->{NAME} a is numeric ($a), t= $t");
 			if ($b ne ''){
 				$q = ($b =~m/.*[qQ].*/)?'true':'false';
 				$d = ($b =~m/.*[lL].*/)?0:1;
@@ -209,6 +211,10 @@ LedController_Get(@) {
   my $cnt = @args;
   
   return undef;
+}
+
+sub LedController_isNumeric{
+ defined $_[0] && $_[0] =~ /^[+-]?\d+$/;
 }
 
 sub
