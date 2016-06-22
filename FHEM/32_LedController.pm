@@ -130,7 +130,7 @@ LedController_Set(@) {
 		#
 		my $defaultColor=AttrVal($ledDevice->{NAME},'defaultColor',0);
 		Log3 ($ledDevice, 5, "$ledDevice->{NAME} defaultColor: $defaultColor");
-		my ($h, $s, $v) = ($defaultColor eq '')?(0,0,100):split(',',$defaultColor );
+		my ($h, $s, $v) = (($defaultColor) eq (0))?(0,0,100):split(',',$defaultColor );
       Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $v, SAT to $s and HUE $h");
       Log3 ($ledDevice, 5, "$ledDevice->{NAME} args[0] = $args[0], args[1] = $args[1]");
       my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[0], $args[1]);
@@ -214,7 +214,7 @@ LedController_Get(@) {
 }
 
 sub LedController_isNumeric{
- defined $_[0] && $_[0] =~ /^[+-]?\d+$/;
+ defined $_[0] && $_[0] =~ /^[+-]?\d+.?\d+$/;
 }
 
 sub
