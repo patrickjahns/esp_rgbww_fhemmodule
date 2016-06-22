@@ -1,11 +1,14 @@
 # esp_rgbww_fhemmodule
 an experimental module for FHEM to drive the esp_rgbww_controllers
 
-Branches:
+### Contributions
 
-let's try to keep the *MASTER* branch functional. I think it is right now after a push I did earlier today.
-If you're working on features, please work on the *develop* branch, it is, right now, in sync with master and all commits are in. 
-We should only accept pull requests for *develop*
+Please refer to [CONTRIBUTING.md](https://github.com/patrickjahns/esp_rgbww_fhemmodule/blob/master/CONTRIBUTING.md) for participating in the project.
+
+### Branches
+* Master: stable and functional (releases)
+* Develop: working branch with latest features
+
 
 ### ToDo:
 * [x] setting to "on" currently sets the *value* (=brightness) to 100 and keeps the current hue and and saturation. I suggest adding an *attr* to define hsv for "on"
