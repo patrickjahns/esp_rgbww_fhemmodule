@@ -365,7 +365,7 @@ LedController_SetHSVColor(@) {
   if ($@) {
     Log3 ($ledDevice, 2, "$ledDevice->{NAME}: error encoding HSV color request $@");
   } else {
-    print "*** $data \n";
+    Log3 ($ledDevice, 4, "$ledDevice->{NAME}: encoded json data: $data ");
     
     my $param = {
       url        => "http://$ip/color?mode=HSV",
