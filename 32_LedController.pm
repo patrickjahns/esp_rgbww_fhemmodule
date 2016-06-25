@@ -220,7 +220,7 @@ LedController_Get(@) {
 }
 
 sub LedController_isNumeric{
- defined $_[0] && $_[0] =~ /^[+-]?\d+.?\d+$/;
+ defined $_[0] && $_[0] =~ /^[+-]?\d+.?\d*$/;
 }
 
 sub
