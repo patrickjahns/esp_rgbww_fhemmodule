@@ -501,17 +501,223 @@ Log3 ($ledDevice, 2, "$ledDevice->{NAME}: error $err setting HSV color");
 
 1;
 
+=pod
 =begin html
 
 <a name="LedController"></a>
 <h3>LedController</h3>
 <ul>
-<b>Define</b>
-<code>define <name> LedController [<type>] <ip-or-hostname></code>
-<b>Set</b>
-TBD
-<b>Get</b>
-TBD
+	<p>The module controls the led controller made by patrick jahns.</p>
+  	<p>Additional information you will find in the <a href="https://forum.fhem.de/index.php/topic,48918.0.html">forum</a>.</p>
+	<br><br>
+
+	<a name="LedControllerdefine"></a>
+	<b>Define</b>
+	<ul>
+		<code>define &lt;name&gt; LedController [&lt;type&gt;] &lt;ip-or-hostname&gt;</code>
+		<br><br>
+
+    	Example:
+    	<ul>
+			<code>define LED_Stripe LedController 192.168.1.11</code><br>
+		</ul>
+	</ul>
+	<br>
+	
+	<a name="LedControllerset"></a>
+	<b>Set</b>
+	<ul>
+		<li>
+			<p><code>set &lt;name&gt; <b>on</b> [ramp] [q]</code></p>
+			<p>Turns on the device. It is either chosen 100% White or the color defined by the attribute "defaultColor".</p>
+			<p>Advanced options:
+			<ul>
+				<li>ramp</li>
+			</ul>
+			</p>
+			<p>Flags:
+        	<ul>
+          		<li>q</li>
+        	</ul>
+      		</p>
+		</li>
+		<li>
+			<p><code>set &lt;name&gt; <b>off</b> [ramp] [q]</code></p>
+			<p>Turns off the device.</p>
+			<p>Advanced options:
+			<ul>
+				<li>ramp</li>
+			</ul>
+			</p>
+			<p>Flags:
+        	<ul>
+          		<li>q</li>
+        	</ul>
+      		</p>
+		</li>
+		<li>
+			<p><code>set &lt;name&gt; <b>dim</b> &lt;level&gt; [ramp] [q]</code></p>
+			<p>Sets the brightness to the specified level (0..100).<br />
+			This command also maintains the preset color even with "dim 0" (off) and then "dim xx" (turned on) at. 
+			Therefore, it represents an alternative form to "off" / "on". The latter would always choose the "default color".</p>
+			<p>Advanced options:
+			<ul>
+				<li>ramp</li>
+			</ul>
+    		</p>
+		    <p>Flags:
+        	<ul>
+          		<li>q</li>
+        	</ul>
+      		</p>
+    	</li>
+		<li>
+			<p><code>set &lt;name&gt; <b>hsv</b> &lt;H,S,V&gt; [ramp] [l|q]</code></p>
+      		<p>Sets color, saturation and brightness in the HSV color space. If the ramp is specified (as a time in seconds), the module calculates a soft color transition from the current color to the newly set.
+      		<ul><i>For example, sets a saturated blue with half brightness:</i><br /><code>set LED_Stripe hsv 240,100,50</code></ul></p>
+      		<p>Advanced options:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>l q</li>
+        	</ul>
+      		</p>
+    	</li>
+    	
+    	<li>
+			<p><code>set &lt;name&gt; <b>hue</b> &lt;value&gt; [ramp] [l|q]</code></p>
+      		<p>Sets the color angle (0..360) in the HSV color space. If the ramp is specified (as a time in seconds), the module calculates a soft color transition from the current color to the newly set.
+      		<ul><i>For example, changing only the hue with a transition of 5 seconds:</i><br /><code>set LED_Stripe hue 180 5</code></ul></p>
+      		<p>Advanced options:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>l q</li>
+        	</ul>
+      		</p>
+    	</li>
+    	<li>
+			<p><code>set &lt;name&gt; <b>sat</b> &lt;value&gt; [ramp] [q]</code></p>
+      		<p>Sets the saturation in the HSV color space to the specified value (0..100). If the ramp is specified (as a time in seconds), the module calculates a soft color transition from the current saturation to the newly set.
+      		<ul><i>For example, changing only the saturation with a transition of 5 seconds:</i><br /><code>set LED_Stripe sat 60 5</code></ul></p>
+      		<p>Advanced options:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>q</li>
+        	</ul>
+      		</p>
+    	</li>
+    	<li>
+			<p><code>set &lt;name&gt; <b>val</b> &lt;value&gt; [ramp] [q]</code></p>
+      		<p>Sets the brightness to the specified value (0..100). It's the same as cmd <b>dim</b>.</p>
+      		<p>Advanced options:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>q</li>
+        	</ul>
+      		</p>
+    	</li>
+    	<li>
+			<p><code>set &lt;name&gt; <b>rotate</b> &lt;angle&gt; [ramp] [l|q]</code></p>
+      		<p>Sets the color in the HSV color space by addition of the specified angle to the current color.
+      		<ul><i>For example, changing color from current green to blue:</i><br /><code>set LED_Stripe rotate 120</code></ul></p>
+      		<p>Advanced options:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>l q</li>
+        	</ul>
+      		</p>
+    	</li>
+    	<li>
+      		<p><code>set &lt;name&gt; <b>rgb</b> &lt;RRGGBB&gt; [ramp] [l|q]</code></p>
+      		<p>Sets the color in the RGB color space.<br>
+      		Currently RGB values will be converted into HSV to make use of the internal color compensation of the LedController.</p>
+      		<p>Advanced options:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>l q</li>
+        	</ul>
+      		</p>
+  		</li>
+  		<li>
+      		<p><code>set &lt;name&gt; <b>update</b></code></p>
+      		<p>Gets the current HSV color from the LedController.</p>
+  		</li>
+  		
+  		<p><b>Meaning of Flags</b></p>
+  		Certain commands (set) can be marked with special flags.
+  		<p>
+  		<ul>
+    		<li>ramp: 
+      			<ul>
+        			Time in seconds for a soft color or brightness transition. The soft transition starts at the currently visible color and is calculated for the specified.
+      			</ul>
+    		</li>
+    		<li>l: 
+      			<ul>
+        			(long). A smooth transition to another color is carried out in the HSV color space on the "long" way.
+        			A transition from red to green then leads across magenta, blue, and cyan.
+      			</ul>
+    		</li>
+    		<li>q: 
+      			<ul>
+        			(queue). Commands with this flag are cached in an internal queue of the LedController and will not run before the currently running soft transitions have been processed. 
+        			Commands without the flag will be processed immediately. In this case all running transitions are stopped immediately and the queue will be cleared.
+      			</ul>
+    		</li>
+  		
+	</ul>
+	<br>
+
+	<a name="LedControllerattr"></a>
+	<b>Attributes</b>
+	<ul>
+		<li><a name="defaultColor">defaultColor</a><br>
+		<code>attr &ltname&gt <b>defaultColor</b> &ltH,S,V&gt</code><br>
+		Specify the light color in HSV which is selected at "on". Default is white.</li>
+
+		<li><a name="defaultRamp">defaultRamp</a><br>
+		Time in milliseconds. If this attribute is set, a smooth transition is always implicitly generated if no ramp in the set is indicated.</li>
+
+		<li><a name="colorTemp">colorTemp</a><br>
+		</li>
+	</ul>
+	<p><b>Colorpicker for FhemWeb</b>
+  	<ul>
+    	<p>
+    	In order for the Color Picker can be used in <a href="#FHEMWEB">FhemWeb</a> following attributes need to be set:
+    	<p>
+    	<li>
+     		<code>attr &ltname&gt <b>webCmd</b> rgb</code>
+    	</li>
+    	<li>
+     		<code>attr &ltname&gt <b>widgetOverride</b> rgb:colorpicker,rgb</code>
+    	</li>
+  	</ul>
+	<br>
+
 </ul>
 
 =end html
@@ -521,12 +727,218 @@ TBD
 <a name="LedController"></a>
 <h3>LedController</h3>
 <ul>
-<b>Define</b>
-<code>define <name> LedController [<type>] <ip-or-hostname></code>
-<b>Set</b>
-TBD
-<b>Get</b>
-TBD
+	<p>Dieses Modul steuert den selbst einwickelten LedController von Patrick Jahns.</p>
+  	<p>Weitere Informationen hierzu sind im <a href="https://forum.fhem.de/index.php/topic,48918.0.html">Forum</a> zu finden.</p>
+	<br><br>
+
+	<a name="LedControllerdefine"></a>
+	<b>Define</b>
+	<ul>
+		<code>define &lt;name&gt; LedController [&lt;type&gt;] &lt;ip-or-hostname&gt;</code>
+		<br><br>
+
+    	Beispiel:
+    	<ul>
+			<code>define LED_Stripe LedController 192.168.1.11</code><br>
+		</ul>
+	</ul>
+	<br>
+	
+	<a name="LedControllerset"></a>
+	<b>Set</b>
+	<ul>
+		<li>
+			<p><code>set &lt;name&gt; <b>on</b> [ramp] [q]</code></p>
+			<p>Schaltet das device ein. Dabei wird entweder 100% Weiß oder die im Attribut "defaultColor" definierte Farbe gewählt.</p>
+			<p>Erweiterte Parameter:
+			<ul>
+				<li>ramp</li>
+			</ul>
+			</p>
+			<p>Flags:
+        	<ul>
+          		<li>q</li>
+        	</ul>
+      		</p>
+		</li>
+		<li>
+			<p><code>set &lt;name&gt; <b>off</b> [ramp] [q]</code></p>
+			<p>Schaltet das device aus.</p>
+			<p>Erweiterte Parameter:
+			<ul>
+				<li>ramp</li>
+			</ul>
+			</p>
+			<p>Flags:
+        	<ul>
+          		<li>q</li>
+        	</ul>
+      		</p>
+		</li>
+		<li>
+			<p><code>set &lt;name&gt; <b>dim</b> &lt;level&gt; [ramp] [q]</code></p>
+			<p>Setzt die Helligkeit auf den angegebenen Wert (0..100).<br />
+			Dieser Befehl behält außerdem die eingestellte Farbe auch bei "dim 0" (ausgeschaltet) und nachfolgendem "dim xx" (eingeschaltet) bei.
+			Daher stellt er eine alternative Form zu "off" / "on" dar. Letzteres würde immer die "defaultColor" wählen.</p>
+			<p>Erweiterte Parameter:
+			<ul>
+				<li>ramp</li>
+			</ul>
+    		</p>
+		    <p>Flags:
+        	<ul>
+          		<li>q</li>
+        	</ul>
+      		</p>
+    	</li>
+		<li>
+			<p><code>set &lt;name&gt; <b>hsv</b> &lt;H,S,V&gt; [ramp] [l|q]</code></p>
+      		<p>Setzt die Farbe, Sättigung und Helligkeit im HSV Farbraum. Wenn die ramp (als Zeit in Sekunden) angegeben ist, berechnet das Modul einen weichen Farbübergang von der aktuellen Farbe zur neu gesetzten.
+      		<ul><i>Beispiel, setzt ein gesättigtes Blau mit halber Helligkeit:</i><br /><code>set LED_Stripe hsv 240,100,50</code></ul></p>
+      		<p>Erweiterte Parameter:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>l q</li>
+        	</ul>
+      		</p>
+    	</li>
+    	
+    	<li>
+			<p><code>set &lt;name&gt; <b>hue</b> &lt;value&gt; [ramp] [l|q]</code></p>
+      		<p>Setzt den Farbwinkel (0..360) im HSV Farbraum. Wenn die ramp (als Zeit in Sekunden) angegeben ist, berechnet das Modul einen weichen Farbübergang von der aktuellen Farbe zur neu gesetzten.
+      		<ul><i>Beispiel, nur Änderung des Farbwertes mit einer Animationsdauer von 5 Sekunden:</i><br /><code>set LED_Stripe hue 180 5</code></ul></p>
+      		<p>Erweiterte Parameter:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>l q</li>
+        	</ul>
+      		</p>
+    	</li>
+    	<li>
+			<p><code>set &lt;name&gt; <b>sat</b> &lt;value&gt; [ramp] [q]</code></p>
+      		<p>Setzt die Sättigung im HSV Farbraum auf den übergebenen Wert (0..100). Wenn die ramp (als Zeit in Sekunden) angegeben ist, berechnet das Modul einen weichen Farbübergang von der aktuellen Sättigung zur neu gesetzten.
+      		<ul><i>Beispiel, nur Änderung der Sättigung mit einer Animationsdauer von 5 Sekunden:</i><br /><code>set LED_Stripe sat 60 5</code></ul></p>
+      		<p>Erweiterte Parameter:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>q</li>
+        	</ul>
+      		</p>
+    	</li>
+    	<li>
+			<p><code>set &lt;name&gt; <b>val</b> &lt;value&gt; [ramp] [q]</code></p>
+      		<p>Setzt die Helligkeit auf den übergebenen Wert (0..100). Dieser Befehl ist identisch zum <b>"dim"</b> Kommando.</p>
+      		<p>Erweiterte Parameter:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>q</li>
+        	</ul>
+      		</p>
+    	</li>
+    	<li>
+			<p><code>set &lt;name&gt; <b>rotate</b> &lt;angle&gt; [ramp] [l|q]</code></p>
+      		<p>Setzt den Farbwinkel im HSV Farbraum durch Addition des Übergebenen Wertes auf die aktuelle Farbe.
+      		<ul><i>Beispiel, Änderung der Farbe von aktuell Grün auf Blau:</i><br /><code>set LED_Stripe rotate 120</code></ul></p>
+      		<p>Erweiterte Parameter:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>l q</li>
+        	</ul>
+      		</p>
+    	</li>
+    	<li>
+      		<p><code>set &lt;name&gt; <b>rgb</b> &lt;RRGGBB&gt; [ramp] [l|q]</code></p>
+      		<p>Setzt die Farbe im RGB Farbraum.<br>
+      		Aktuell wandelt das Modul den Wert vor dem Senden in einen HSV-Wert um, um die interne Farbkompensation des Led Controllers nutzen zu können.</p>
+      		<p>Erweiterte Parameter:
+        	<ul>
+          		<li>ramp</li>
+        	</ul>
+      		</p>
+      		<p>Flags:
+        	<ul>
+          		<li>l q</li>
+        	</ul>
+      		</p>
+  		</li>
+  		<li>
+      		<p><code>set &lt;name&gt; <b>update</b></code></p>
+      		<p>Fragt die aktuellen HSV Farbwerte vom Led Controller ab.</p>
+  		</li>
+  		
+  		<p><b>Bedeutung der Flags</b></p>
+  		Bestimmte Befehle (set) können mit speziellen Flags versehen werden.
+  		<p>
+  		<ul>
+    		<li>ramp: 
+      			<ul>
+        			Zeit in Sekunden für einen weichen Farb- oder Helligkeitsübergang. Der weiche Übergang startet bei der aktuell sichtbaren Farbe und wird zur angegeben berechnet.
+      			</ul>
+    		</li>
+    		<li>l: 
+      			<ul>
+        			(long). Ein weicher Übergang zu einer anderen Farbe wird im Farbkreis auf dem "langen" Weg durchgeführt.</br>
+        			Ein Übergang von ROT nach GRÜN führt dann über MAGENTA, BLAU, und CYAN.
+      			</ul>
+    		</li>
+    		<li>q: 
+      			<ul>
+        			(queue). Kommandos mit diesem Flag werden in der (Controller)internen Warteschlange zwischengespeichert und erst ausgeführt nachdem die aktuell laufenden weichen Übergänge
+        			abgearbeitet wurden. Kommandos ohne das Flag werden sofort abgearbeitet. Dabei werden alle laufenden Übergänge sofort abgebrochen und die Warteschlange wird gelöscht.
+      			</ul>
+    		</li>
+  		
+	</ul>
+	<br>
+
+	<a name="LedControllerattr"></a>
+	<b>Attribute</b>
+	<ul>
+		<li><a name="defaultColor">defaultColor</a><br>
+		<code>attr &ltname&gt <b>defaultColor</b> &ltH,S,V&gt</code><br>
+		HSV Angabe der Lichtfarbe die bei "on" gewählt wird. Standard ist Weiß.</li>
+
+		<li><a name="defaultRamp">defaultRamp</a><br>
+		Zeit in Millisekunden. Wenn dieses Attribut gesetzt ist wird implizit immer ein weicher Übergang erzeugt wenn keine ramp im set angegeben ist.</li>
+
+		<li><a name="colorTemp">colorTemp</a><br>
+		</li>
+	</ul>
+	<p><b>Colorpicker für FhemWeb</b>
+  	<ul>
+    	<p>
+    	Um den Color-Picker für <a href="#FHEMWEB">FhemWeb</a> zu aktivieren müssen folgende Attribute gesetzt werden:
+    	<p>
+    	<li>
+     		<code>attr &ltname&gt <b>webCmd</b> rgb</code>
+    	</li>
+    	<li>
+     		<code>attr &ltname&gt <b>widgetOverride</b> rgb:colorpicker,rgb</code>
+    	</li>
+  	</ul>
+	<br>
+
 </ul>
 
 =end html_DE
+=cut
