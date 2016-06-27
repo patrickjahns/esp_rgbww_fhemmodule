@@ -176,12 +176,18 @@ LedController_Set(@) {
       LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, (($t==0)?'solid':'fade'), $q, $d);
 
   } elsif ($cmd eq 'pause'){
-    my $v = ReadingsVal($ledDevice->{NAME}, "val", 0);
-    my $h = ReadingsVal($ledDevice->{NAME}, "hue", 0);
-    my $s = ReadingsVal($ledDevice->{NAME}, "sat", 0);
-    my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[0], $args[1]);
-    LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t, 'solid', $q, $d);
-  } elsif ($cmd eq 'update') {
+      my $v = ReadingsVal($ledDevice->{NAME}, "val", 0);
+      my $h = ReadingsVal($ledDevice->{NAME}, "hue", 0);
+      my $s = ReadingsVal($ledDevice->{NAME}, "sat", 0);
+      my ($t, $q, $d) = LedController_ArgsHelper($ledDevice, $args[0], $args[1]);
+      #
+      #   ugly workaround for pause - since solid doesn't seem to work right now    
+      #   
+      if($v == 0){$v=0.1;}else{$v=$v-0.1;}
+      LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t/2, 'fade', $q, $d);
+      if($v == 0.1){$v=0;}else{$v=$v+0.1;}
+      LedController_SetHSVColor($ledDevice, $h, $s, $v, $colorTemp, $t/2, 'fade', $q, $d);
+  }elsif ($cmd eq 'update') {
     LedController_GetHSVColor($ledDevice);
   }
   return undef;
