@@ -1,6 +1,9 @@
 # esp_rgbww_fhemmodule
 an experimental module for FHEM to drive the esp_rgbww_controllers
 
+### Installation
+use update all <url to blame file controls_ledcontroller.txt>
+
 ### Contributions
 
 Please refer to [CONTRIBUTING.md](https://github.com/patrickjahns/esp_rgbww_fhemmodule/blob/master/CONTRIBUTING.md) for participating in the project.
