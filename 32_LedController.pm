@@ -185,7 +185,7 @@ sub
 LedController_ArgsHelper(@) {
 	my ($ledDevice, $a, $b) = @_;	
 	Log3 ($ledDevice, 5, "$ledDevice->{NAME} extended args raw: $a, $b");
-	my $t = 0;
+	my $t = AttrVal($ledDevice->{NAME}, "defaultRamp", 0); # default fade time in ms, zero if not set.
 	my $q = 'false';
 	my $d = '1';
 	if($a!=''){
