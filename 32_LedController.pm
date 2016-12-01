@@ -187,7 +187,9 @@ LedController_Set(@) {
 		
 		# Set val from arguments, keep hue and sat the way they were
 		my $val = $args[0];
-		$val = ($val<0)?0:($val>100)?100:$val;   # SHUZZ sanity check
+		# input validation
+		$val = ($val<0)?0:($val>100)?100:$val;
+		
 		my $hue = ReadingsVal($ledDevice->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($ledDevice->{NAME}, "sat", 0);
 		Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $val, keeping HUE $hue and SAT $sat");
@@ -198,8 +200,10 @@ LedController_Set(@) {
 		# dimming value is first parameter, add to $val and keep hue and sat the way they were.
 		my $dim = $args[0];
 		my $val = ReadingsVal($ledDevice->{NAME}, "val", 0);
-		$val = $val + $dim;   # TODO: What about negative values of dim? =)
-		if ($val>100) {$val=100}
+		$val = $val + $dim;
+		
+		#sanity check needs to run both ways, dim could be set to -200 and we'd end up with a negative reading.
+		$val = ($val<0)?0:($val>100)?100:$val;
 		my $hue = ReadingsVal($ledDevice->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($ledDevice->{NAME}, "sat", 0);
 		Log3 ($ledDevice, 5, "$ledDevice->{NAME} dimming VAL by $dim to $val, keeping HUE $hue and SAT $sat");
@@ -210,8 +214,10 @@ LedController_Set(@) {
 		# dimming value is first parameter, subtract from $val and keep hue and sat the way they were.
 		my $dim = $args[0];
 		my $val = ReadingsVal($ledDevice->{NAME}, "val", 0);
-		$val = $val - $dim;   # TODO: What about negative values of dim? =)
-		if ($val<0) {$val=0}
+		$val = $val - $dim;
+
+		#sanity check needs to run both ways, dim could be set to -200 and we'd end up with a negative reading.
+		$val = ($val<0)?0:($val>100)?100:$val;
 		my $hue = ReadingsVal($ledDevice->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($ledDevice->{NAME}, "sat", 0);
 		Log3 ($ledDevice, 5, "$ledDevice->{NAME} dimming VAL by $dim to $val, keeping HUE $hue and SAT $sat");
