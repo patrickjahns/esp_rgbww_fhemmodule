@@ -115,6 +115,12 @@ LedController_Set(@) {
 		# expected args: <hue:0-360>,<sat:0-100>,<val:0-100>
 		# HSV color values --> $hue, $sat and $val are split from arg1
 		my ($hue, $sat, $val) = split ',', $args[0];
+
+		# sanity check / range correction. Making sure values are in correct range (see above)
+		# TODO: Silently correct values or return an error message?
+		$hue = $hue%360;
+		$sat = ($sat<0)?0:($sat>100)?100:$sat;
+		$val = ($val<0)?0:($val>100)?100:$val;
 		
 		LedController_SetHSVColor($ledDevice, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
    
