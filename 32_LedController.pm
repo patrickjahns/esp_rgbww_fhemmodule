@@ -252,6 +252,11 @@ LedController_Set(@) {
 		LedController_SetHSVColor($ledDevice, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
 	} elsif ($cmd eq 'pause'){
+	
+		# For use in queued fades.
+		# Will stay at the current color for $fadetime seconds.
+		# NOTE: Does not make sense without $doQueue == "true".
+		# TODO: Add a check for queueing = true? Or just execute anyway?
 		my $val = ReadingsVal($ledDevice->{NAME}, "val", 0);
 		my $hue = ReadingsVal($ledDevice->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($ledDevice->{NAME}, "sat", 0);
