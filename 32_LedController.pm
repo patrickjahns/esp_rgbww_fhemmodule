@@ -146,8 +146,6 @@ LedController_Set(@) {
 	  	
 	  	my $hue=ReadingsVal($ledDevice->{NAME}, "hue", 0);
 		
-		# SHUZZ QUESTION: What about negative numbers? Is this enough?
-		# TODO Try some debug output later...
 		$hue = ($hue + $rotation)%360;
 		
 		my $val = ReadingsVal($ledDevice->{NAME}, "val", 0);
