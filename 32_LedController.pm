@@ -141,15 +141,18 @@ LedController_Set(@) {
 		LedController_SetHSVColor($ledDevice, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 		
 	} elsif ($cmd eq 'rotate'){
-	  
+		
+		# get rotation value
 		my $rotation = $args[0];
-	  	
-	  	my $hue=ReadingsVal($ledDevice->{NAME}, "hue", 0);
 		
-		$hue = ($hue + $rotation)%360;
-		
+		# get current hsv from Readings
+	  	my $hue = ReadingsVal($ledDevice->{NAME}, "hue", 0);
 		my $val = ReadingsVal($ledDevice->{NAME}, "val", 0);
 		my $sat = ReadingsVal($ledDevice->{NAME}, "sat", 0);
+
+		# add rotation to hue and normalize to 0-359
+		$hue = ($hue + $rotation)%360;
+
 		Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting HUE to $hue, keeping VAL $val and SAT $sat");
 		LedController_SetHSVColor($ledDevice, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 	  		
