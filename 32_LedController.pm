@@ -228,6 +228,9 @@ LedController_Set(@) {
 		# get new saturation value $sat from args, keep hue and val the way they were.
 		my $sat = $args[0];
 		
+		# sanity check
+		$sat = ($sat<0)?0:($sat>100)?100:$sat;
+		
 		my $hue = ReadingsVal($ledDevice->{NAME}, "hue", 0);
 		my $val = ReadingsVal($ledDevice->{NAME}, "val", 0);
 		Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting SAT to $sat, keeping HUE $hue and VAL $val");
@@ -235,8 +238,12 @@ LedController_Set(@) {
 
 	} elsif ($cmd eq 'hue') {
       
-		# get new huer value $sat from args, keep sat and val the way they were.
+		# get new hue value $sat from args, keep sat and val the way they were.
 		my $hue = $args[0];
+		
+		# sanity check
+		$hue = $hue%360;
+		
 		my $val = ReadingsVal($ledDevice->{NAME}, "val", 0);
 		my $sat = ReadingsVal($ledDevice->{NAME}, "sat", 0);
 		Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting HUE to $hue, keeping VAL $val and SAT $sat");
