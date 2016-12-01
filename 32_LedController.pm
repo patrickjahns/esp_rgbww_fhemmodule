@@ -108,7 +108,7 @@ LedController_Set(@) {
 	# $doQueue (true|false): Should this operation be queued or executed directly on the controller?
 	# $direction: Take the short route on HSV for the transition (0) or the long one (1)
 	# SHUZZ: These arguments may be added to any set command here, therefore we can decode them now.
-	my ($fadeTime, $doQueue, $direction) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]) if ($cmd ne 'pause')
+	my ($fadeTime, $doQueue, $direction) = LedController_ArgsHelper($ledDevice, $args[1], $args[2]);
 
 	
 	if ($cmd eq 'hsv') {
@@ -116,7 +116,6 @@ LedController_Set(@) {
 		# HSV color values --> $hue, $sat and $val are split from arg1
 		my ($hue, $sat, $val) = split ',', $args[0];
 		
-		# SHUZZ QUESTION: What happens if we send a duration together with "solid"? Would that be valid? Just wondering...
 		LedController_SetHSVColor($ledDevice, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
    
 	} elsif ($cmd eq 'rgb') {
@@ -147,7 +146,7 @@ LedController_Set(@) {
 		
 		my $val = ReadingsVal($ledDevice->{NAME}, "val", 0);
 		my $sat = ReadingsVal($ledDevice->{NAME}, "sat", 0);
-		Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting HUE to $hue, keeping VAL $val and SAT $s");
+		Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting HUE to $hue, keeping VAL $val and SAT $sat");
 		LedController_SetHSVColor($ledDevice, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 	  		
 	} elsif ($cmd eq 'on') {
@@ -160,7 +159,7 @@ LedController_Set(@) {
 
 		# break down to hue, sat and val components.
 		# if color is not set (== 0), default to 0,0,100 (i.e. plain white).
-		my ($hue, $sat $val) = (($defaultColor) eq (0))?(0,0,100):split(',',$defaultColor );
+		my ($hue, $sat, $val) = (($defaultColor) eq (0))?(0,0,100):split(',',$defaultColor );
 		Log3 ($ledDevice, 5, "$ledDevice->{NAME} setting VAL to $val, SAT to $sat and HUE $hue");
 		Log3 ($ledDevice, 5, "$ledDevice->{NAME} args[0] = $args[0], args[1] = $args[1]");
 
@@ -386,7 +385,7 @@ sub
 LedController_SetHSVColor(@) {
 
   my ($ledDevice, $hue, $sat, $val, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction) = @_;
-  Log3 ($ledDevice, 5, "$ledDevice->{NAME}: called SetHSVColor $hue, $sat $val $ct, $fadeTime, $transitionType, $doQueue, $direction)");
+  Log3 ($ledDevice, 5, "$ledDevice->{NAME}: called SetHSVColor $hue, $sat, $val, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction)");
   my $ip = $ledDevice->{IP};
   my $data; 
   my $cmd;
@@ -426,16 +425,16 @@ LedController_SetHSVColor(@) {
     # TODO consolidate into an "_setReadings" 
     # TODO move the call to the api result section and add error handling
     
-    my ($red, $green, $blue)=LedController_HSV2RGB($hue, $sat $val);
+    my ($red, $green, $blue)=LedController_HSV2RGB($hue, $sat, $val);
     my $xrgb=sprintf("%02x%02x%02x",$red,$green,$blue);
     Log3 ($ledDevice, 5, "$ledDevice->{NAME}: calculated RGB as $xrgb");
-    Log3 ($ledDevice, 4, "$ledDevice->{NAME}: begin Readings Update\n   hue: $hue\n   sat: $s\n   val:$val\n   ct : $ct\n   HSV: $hue,$sat,$val\n   RGB: $xrgb");
+    Log3 ($ledDevice, 4, "$ledDevice->{NAME}: begin Readings Update\n   hue: $hue\n   sat: $sat\n   val:$val\n   ct : $colorTemp\n   HSV: $hue,$sat,$val\n   RGB: $xrgb");
 
     readingsBeginUpdate($ledDevice);
     readingsBulkUpdate($ledDevice, 'hue', $hue);
-    readingsBulkUpdate($ledDevice, 'sat', $sat;
+    readingsBulkUpdate($ledDevice, 'sat', $sat);
     readingsBulkUpdate($ledDevice, 'val', $val);
-    readingsBulkUpdate($ledDevice, 'ct' , $ct);
+    readingsBulkUpdate($ledDevice, 'ct' , $colorTemp);
     readingsBulkUpdate($ledDevice, 'hsv', "$hue,$sat,$val");
     readingsBulkUpdate($ledDevice, 'rgb', $xrgb);
     readingsBulkUpdate($ledDevice, 'state', ($val== 0)?'off':'on');
@@ -490,7 +489,7 @@ LedController_SetRAWColor(@) {
       loglevel   => 5
     };
     
-    Log3 ($ledDevice, 4, "$ledDevice->{NAME}: set RAW color request r:$red g:$green b:$blue ww:$warmWhite cw:$cw");
+    Log3 ($ledDevice, 4, "$ledDevice->{NAME}: set RAW color request r:$red g:$green b:$blue ww:$warmWhite cw:$coldWhite");
     #Log3 ($ledDevice, 4, "$ledDevice->{NAME}: set RAW color request \n$param");
     LedController_addCall($ledDevice, $param);  
   }
@@ -628,7 +627,7 @@ LedController_RGB2HSV(@) {
     $blue=($blue*1023)/255;
 
     my ($max, $min, $delta);
-    my ($hue, $sat $val);
+    my ($hue, $sat, $val);
 
     $max = $red if (($red >= $green) && ($red >= $blue));
     $max = $green if (($green >= $red) && ($green >= $blue));
@@ -649,7 +648,7 @@ LedController_RGB2HSV(@) {
     $hue = 4 + ($red - $green) / $delta if ($blue == $max);
     $hue = int(($hue * 60) + 0.5);
     $hue += 360 if ($hue < 0);
-    return $hue, $sat $val;
+    return $hue, $sat, $val;
 }
 
 sub
