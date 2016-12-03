@@ -173,28 +173,28 @@ LedController_Set(@) {
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
 		
 		# defaultHue/Sat/Val will overwrite old values if present because this is "on" cmd.
-		# TODO: Sanity/range check for these values. Helper function?
-		$hue = AttrVal($hash->{NAME}, "defaultHue", $hue);
-		$sat = AttrVal($hash->{NAME}, "defaultSat", $sat);
-		$val = AttrVal($hash->{NAME}, "defaultVal", $val);
+		my $dHue = AttrVal($hash->{NAME}, "defaultHue", $hue);
+		my $dSat = AttrVal($hash->{NAME}, "defaultSat", $sat);
+		my $dVal = AttrVal($hash->{NAME}, "defaultVal", $val);
+
+		# range/sanity check
+		$hue = LedController_rangeCheck($dHue, 0, 359)?$dHue:$hue; 
+		$sat = LedController_rangeCheck($dSat, 0, 100)?$dSat:$sat; 
+		$val = LedController_rangeCheck($dVal, 0, 100)?$dVal:$val; 
 		
 		# Load default color from attributes (DEPRECATED)
 		my $defaultColor=AttrVal($hash->{NAME},'defaultColor',0);
 		Log3 ($hash, 5, "$hash->{NAME} defaultColor: $defaultColor");
 
-		# Validation: First check if defaultColor consists of three number with up to three digits, separated by comma.
-		if($defaultColor =~ /^[0-9]?[0-9]?[0-9],[0-9]?[0-9]?[0-9],[0-9]?[0-9]?[0-9]$/) {
-			my($dcHue, $dcSat, $dcVal) = split(',',$defaultColor );
-			if( $dcHue >= 0 && $dcHue <= 359 && $dcSat >= 0 && $dcSat <= 100 && $dcVal >= 0 && $dcVal <= 100) {
-				# defaultColor values are valid. Overwrite current hue/sat/val.
-				$hue = $dcHue;
-				$sat = $dcSat;
-				$val = $dcVal;
-			}
+		# Split defaultColor and if all three components pass rangeCheck set them.
+		my($dcHue, $dcSat, $dcVal) = split(',',$defaultColor );
+		if( LedController_rangeCheck($dcHue, 0, 359) && LedController_rangeCheck($dcSat, 0, 100) && LedController_rangeCheck($dcVal, 0, 100)) {
+			# defaultColor values are valid. Overwrite current hue/sat/val.
+			$hue = $dcHue;
+			$sat = $dcSat;
+			$val = $dcVal;
 		}
-		
-		# break down to hue, sat and val components.
-		# if color is not set (== 0), default to 0,0,100 (i.e. plain white).
+
 		Log3 ($hash, 5, "$hash->{NAME} setting VAL to $val, SAT to $sat and HUE $hue");
 		Log3 ($hash, 5, "$hash->{NAME} args[0] = $args[0], args[1] = $args[1]");
 
@@ -769,6 +769,11 @@ LedController_ArgsHelper(@) {
 
 sub LedController_isNumeric{
  defined $_[0] && $_[0] =~ /^[+-]?\d+.?\d*$/;
+}
+
+sub LedController_rangeCheck(@){
+	my ($val, $min, $max) = @_;
+	return LedController_isNumeric($val) && $val >= $min && $val <= $max;
 }
 
 1;
