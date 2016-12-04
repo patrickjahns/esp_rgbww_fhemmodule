@@ -119,15 +119,15 @@ LedController_Set(@) {
 		my ($hue, $sat, $val) = split ',', $args[0];
 		
 		if (! LedController_checkRange($hue, 0, 360)){
-			Log3 ($hash, 5, "$hash->{NAME} HUE must be a number from 0-359");
+			Log3 ($hash, 3, "$hash->{NAME} HUE must be a number from 0-359");
 			return "HUE must be a number from 0-359";
 		}
 		if (! LedController_checkRange($sat, 0, 100)){
-			Log3 ($hash, 5, "$hash->{NAME} SAT must be a number from 0-100");
+			Log3 ($hash, 3, "$hash->{NAME} SAT must be a number from 0-100");
 			return "SAT must be a number from 0-100";
 		}
 		if (! LedController_checkRange($val, 0, 100)){
-			Log3 ($hash, 5, "$hash->{NAME} VAL must be a number from 0-100");
+			Log3 ($hash, 3, "$hash->{NAME} VAL must be a number from 0-100");
 			return "VAL must be a number from 0-100";
 		}
 		
@@ -139,7 +139,10 @@ LedController_Set(@) {
 		# This is to make use of the internal color compensation of the controller
 		
 		# sanity check, is string in required format?
-		return "RGB is required hex RRGGBB" if (defined($args[0]) && $args[0] !~ /^[0-9A-Fa-f]{6}$/);
+		if ( ! defined($args[0]) ||  $args[0] !~ /^[0-9A-Fa-f]{6}$/ ){
+			Log3 ($hash, 3, "$hash->{NAME} RGB requires parameter: Hex RRGGBB (e.g. 3478DE)");
+			return "$hash->{NAME} RGB requires parameter: Hex RRGGBB (e.g. 3478DE)";
+		}
 
 		# break down param string into discreet RGB values, also Hex to Int
 		my $red = hex(substr($args[0],0,2));
