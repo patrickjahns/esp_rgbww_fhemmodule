@@ -157,7 +157,10 @@ LedController_Set(@) {
 		# get rotation value
 		my $rotation = $args[0];
 
-		return "Rotation requires a number argument" if ! LedController_isNumeric($rotation);
+		if (! LedController_isNumeric($rotation)){
+			Log3 ($hash, 3, "$hash->{NAME} rotation requires a numeric argument.");
+			return "$hash->{NAME} rotation requires a numeric argument.";
+		}
 		
 		# get current hsv from Readings
 	  	my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
