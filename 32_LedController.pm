@@ -117,12 +117,10 @@ LedController_Set(@) {
 		# expected args: <hue:0-360>,<sat:0-100>,<val:0-100>
 		# HSV color values --> $hue, $sat and $val are split from arg1
 		my ($hue, $sat, $val) = split ',', $args[0];
-
-		# sanity check / range correction. Making sure values are in correct range (see above)
-		# TODO: Silently correct values or return an error message?
-		$hue = $hue%360;
-		$sat = ($sat<0)?0:($sat>100)?100:$sat;
-		$val = ($val<0)?0:($val>100)?100:$val;
+		
+		return "HUE must be a number from 0-359" if ! LedController_checkRange($hue, 0, 360);
+		return "SAT must be a number from 0-100" if ! LedController_checkRange($sat, 0, 100);
+		return "VAL must be a number from 0-100" if ! LedController_checkRange($val, 0, 100);
 		
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
    
@@ -146,6 +144,8 @@ LedController_Set(@) {
 		
 		# get rotation value
 		my $rotation = $args[0];
+
+		return "Rotation requires a number argument" if ! LedController_isNumeric($rotation);
 		
 		# get current hsv from Readings
 	  	my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
@@ -166,21 +166,15 @@ LedController_Set(@) {
 		my $val = ReadingsVal($hash->{NAME}, "val", 0);
 		return undef if ($val > 0); 
 		
-		# OK, val was 0. Let's default it to 100 and see if something else comes up from attr/readings
+		# OK, val was 0.
 		# val initialized from internal value.
+		# if internal was 0, default to 100;
 		$val = $hash->{helper}->{oldVal};
+		if (val eq 0){
+			val = 100;
+		}
 	  	my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
-		
-		# defaultHue/Sat/Val will overwrite old values if present because this is "on" cmd.
-		my $dHue = AttrVal($hash->{NAME}, "defaultHue", $hue);
-		my $dSat = AttrVal($hash->{NAME}, "defaultSat", $sat);
-		my $dVal = AttrVal($hash->{NAME}, "defaultVal", $val);
-
-		# range/sanity check
-		$hue = LedController_rangeCheck($dHue, 0, 359)?$dHue:$hue; 
-		$sat = LedController_rangeCheck($dSat, 0, 100)?$dSat:$sat; 
-		$val = LedController_rangeCheck($dVal, 0, 100)?$dVal:$val; 
 		
 		# Load default color from attributes (DEPRECATED)
 		my $defaultColor=AttrVal($hash->{NAME},'defaultColor',0);
@@ -189,11 +183,23 @@ LedController_Set(@) {
 		# Split defaultColor and if all three components pass rangeCheck set them.
 		my($dcHue, $dcSat, $dcVal) = split(',',$defaultColor );
 		if( LedController_rangeCheck($dcHue, 0, 359) && LedController_rangeCheck($dcSat, 0, 100) && LedController_rangeCheck($dcVal, 0, 100)) {
+			Log3 ($hash, 3, "$hash->{NAME} attr \"defaultColor\" is deprecated. Please use deafaultHue, deafaultSat and deafaultVal individually.");
 			# defaultColor values are valid. Overwrite current hue/sat/val.
 			$hue = $dcHue;
 			$sat = $dcSat;
 			$val = $dcVal;
 		}
+
+		# defaultHue/Sat/Val will overwrite old values if present because this is "on" cmd.
+		my $dHue = AttrVal($hash->{NAME}, "defaultHue", $hue);
+		my $dSat = AttrVal($hash->{NAME}, "defaultSat", $sat);
+		my $dVal = AttrVal($hash->{NAME}, "defaultVal", $val);
+		
+		# range/sanity check
+		$hue = LedController_rangeCheck($dHue, 0, 359)?$dHue:$hue; 
+		$sat = LedController_rangeCheck($dSat, 0, 100)?$dSat:$sat; 
+		$val = LedController_rangeCheck($dVal, 0, 100)?$dVal:$val; 
+		
 
 		Log3 ($hash, 5, "$hash->{NAME} setting VAL to $val, SAT to $sat and HUE $hue");
 		Log3 ($hash, 5, "$hash->{NAME} args[0] = $args[0], args[1] = $args[1]");
@@ -321,8 +327,9 @@ LedController_Attr(@) {
   my $hash = $defs{$device};
 
   if ($cmd eq 'set' && $attribName eq 'colorTemp'){
-  return "colorTemp must be between 2000 and 10000" if ($attribVal <2000 || $attribVal >10000);
+  return "colorTemp must be between 2000 and 10000" if ! LedController_rangeCheck($attribVal, 2000, 10000);
   }
+  # TODO: Add checks for defaultColor, defaultHue/Sat/Val here!
   Log3 ($hash, 4, "$hash->{NAME} attrib $attribName $cmd $attribVal") if $attribVal; 
   return undef;
 }
@@ -671,8 +678,6 @@ LedController_callback(@) {
 #
 ###############################################################################
 
-# TODO Refactor into RGB2HSV and RAW2HSV
-# 
 
 sub
 LedController_RGB2HSV(@) {
