@@ -319,6 +319,9 @@ LedController_Set(@) {
 		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
 		my ($fadeTime, $doQueue, $direction) = LedController_ArgsHelper($hash, $args[0], $args[1]);
+		if ($fadeTime eq 0 || $doQueue eq 'false'){
+			Log3 ($hash, 3, "$hash->{NAME} Note: pause only makes sense if fadeTime is > 0 AND if queueing is activated for command!");
+		}
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, 'solid', $doQueue, $direction);
 		
 	} elsif ( $cmd eq 'raw' ) {
