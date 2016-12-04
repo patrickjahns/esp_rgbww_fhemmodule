@@ -239,7 +239,10 @@ LedController_Set(@) {
 		# Set val from arguments, keep hue and sat the way they were
 		my $val = $args[0];
 		# input validation
-		$val = ($val<0)?0:($val>100)?100:$val;
+		if( ! LedController_checkRange($val, 0, 100){
+			Log3 ($hash, 3, "$hash->{NAME} value must be a number from 0-100");
+			return "$hash->{NAME} value must be a number from 0-100";
+		}
 		
 		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
@@ -278,9 +281,11 @@ LedController_Set(@) {
       
 		# get new saturation value $sat from args, keep hue and val the way they were.
 		my $sat = $args[0];
-		
-		# sanity check
-		$sat = ($sat<0)?0:($sat>100)?100:$sat;
+		# input validation
+		if( ! LedController_checkRange($sat, 0, 100){
+			Log3 ($hash, 3, "$hash->{NAME} sat value must be a number from 0-100");
+			return "$hash->{NAME} sat value must be a number from 0-100";
+		}
 		
 		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
 		my $val = ReadingsVal($hash->{NAME}, "val", 0);
@@ -291,9 +296,11 @@ LedController_Set(@) {
       
 		# get new hue value $sat from args, keep sat and val the way they were.
 		my $hue = $args[0];
-		
-		# sanity check
-		$hue = $hue%360;
+		# input validation
+		if( ! LedController_checkRange($hue, 0, 359){
+			Log3 ($hash, 3, "$hash->{NAME} hue value must be a number from 0-359");
+			return "$hash->{NAME} hue value must be a number from 0-359";
+		}
 		
 		my $val = ReadingsVal($hash->{NAME}, "val", 0);
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
