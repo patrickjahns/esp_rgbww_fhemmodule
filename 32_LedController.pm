@@ -120,15 +120,15 @@ LedController_Set(@) {
 		
 		if (! LedController_checkRange($hue, 0, 360)){
 			Log3 ($hash, 3, "$hash->{NAME} HUE must be a number from 0-359");
-			return "HUE must be a number from 0-359";
+			return "$hash->{NAME} HUE must be a number from 0-359";
 		}
 		if (! LedController_checkRange($sat, 0, 100)){
 			Log3 ($hash, 3, "$hash->{NAME} SAT must be a number from 0-100");
-			return "SAT must be a number from 0-100";
+			return "$hash->{NAME} SAT must be a number from 0-100";
 		}
 		if (! LedController_checkRange($val, 0, 100)){
 			Log3 ($hash, 3, "$hash->{NAME} VAL must be a number from 0-100");
-			return "VAL must be a number from 0-100";
+			return "$hash->{NAME} VAL must be a number from 0-100";
 		}
 		
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
