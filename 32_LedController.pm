@@ -118,9 +118,18 @@ LedController_Set(@) {
 		# HSV color values --> $hue, $sat and $val are split from arg1
 		my ($hue, $sat, $val) = split ',', $args[0];
 		
-		return "HUE must be a number from 0-359" if ! LedController_checkRange($hue, 0, 360);
-		return "SAT must be a number from 0-100" if ! LedController_checkRange($sat, 0, 100);
-		return "VAL must be a number from 0-100" if ! LedController_checkRange($val, 0, 100);
+		if (! LedController_checkRange($hue, 0, 360)){
+			Log3 ($hash, 5, "$hash->{NAME} HUE must be a number from 0-359");
+			return "HUE must be a number from 0-359";
+		}
+		if (! LedController_checkRange($sat, 0, 100)){
+			Log3 ($hash, 5, "$hash->{NAME} SAT must be a number from 0-100");
+			return "SAT must be a number from 0-100";
+		}
+		if (! LedController_checkRange($val, 0, 100)){
+			Log3 ($hash, 5, "$hash->{NAME} VAL must be a number from 0-100");
+			return "VAL must be a number from 0-100";
+		}
 		
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
    
