@@ -198,7 +198,7 @@ LedController_Set(@) {
 		# Split defaultColor and if all three components pass rangeCheck set them.
 		my($dcHue, $dcSat, $dcVal) = split(',',$defaultColor );
 		if( LedController_rangeCheck($dcHue, 0, 359) && LedController_rangeCheck($dcSat, 0, 100) && LedController_rangeCheck($dcVal, 0, 100)) {
-			Log3 ($hash, 3, "$hash->{NAME} attr \"defaultColor\" is deprecated. Please use deafaultHue, deafaultSat and deafaultVal individually.");
+			Log3 ($hash, 3, "$hash->{NAME} attr \"defaultColor\" is deprecated. Please use defaultHue, defaultSat and defaultVal individually.");
 			# defaultColor values are valid. Overwrite current hue/sat/val.
 			$hue = $dcHue;
 			$sat = $dcSat;
