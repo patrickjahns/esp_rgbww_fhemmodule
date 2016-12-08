@@ -46,6 +46,7 @@ LedController_Initialize(@) {
   $hash->{NotifyFn}             = 'LedController_Notify';
   $hash->{ReadFn}               = 'LedController_Read';
   $hash->{helper}->{oldVal}	    = 100;
+  # why define this here? The "on" routine uses the literal anyway
   
   $hash->{AttrList}     = "defaultRamp defaultColor defaultHue defaultSat defaultVal colorTemp"
                           ." $readingFnAttributes";
@@ -96,14 +97,17 @@ LedController_Set(@) {
   
 	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat val dim dimup dimdown on off rotate raw" if ($cmd eq '?');
 
+    my $loglevel=($attr{$hash}{verbose}>$attr{global}{verbose})?$attr{$hash}{verbose}:$attr{global}{verbose};
+
 	my $descriptor = '';	# What's this???
+                            # pj: I honestly don't know and it's not being used either.
 	
 	# $colorTemp : Color temperature in Kelvin (K). Can be set in attr. Default 2700K. Used for ???
 	my $colorTemp = AttrVal($hash->{NAME},'colorTemp',0);
 	$colorTemp = ($colorTemp)?$colorTemp:2700;
 	
 	
-	Log3 ($hash, 5, "$hash->{NAME} (Set) called with $cmd, busy flag is $hash->{helper}->{isBusy}\n name is $name, args ".Dumper(@args));
+	Log3 ($hash, 5, "$hash->{NAME} (Set) called with $cmd, busy flag is $hash->{helper}->{isBusy}\n name is $name, args ".Dumper(@args)) if ($loglevel>=5);
 	Log3 ($hash, 3, "$hash->{NAME} (Set) called with $cmd, busy flag is $hash->{helper}->{isBusy}");  
 
 	# $fadeTime: Duration of the color change in ms
@@ -178,10 +182,10 @@ LedController_Set(@) {
 		# if you want to keep the hue/sat from before, use "dim" or it's equivalent "val"
 		
 		# Add check to only do something if the controller is REALLY turned off, i.e. val eq 0
-		my $val = ReadingsVal($hash->{NAME}, "val", 0);
-		return undef if ($val > 0); 
+		my $val = ReadingsVal($hash->{NAME}, "state", "off");
+		return undef if ($val eq "on"); 
 		
-		# OK, val was 0.
+		# OK, state was off 
 		# val initialized from internal value.
 		# if internal was 0, default to 100;
 		$val = $hash->{helper}->{oldVal};
@@ -193,12 +197,11 @@ LedController_Set(@) {
 		
 		# Load default color from attributes (DEPRECATED)
 		my $defaultColor=AttrVal($hash->{NAME},'defaultColor',0);
-		Log3 ($hash, 5, "$hash->{NAME} defaultColor: $defaultColor");
+		Log3 ($hash, 2, "$hash->{NAME} attr \"defaultColor\" is deprecated. Please use the new Attrs defaultHue, defaultSat and defaultVal individually.") if (! $defaultColor eq "");
 
 		# Split defaultColor and if all three components pass rangeCheck set them.
 		my($dcHue, $dcSat, $dcVal) = split(',',$defaultColor );
 		if( LedController_rangeCheck($dcHue, 0, 359) && LedController_rangeCheck($dcSat, 0, 100) && LedController_rangeCheck($dcVal, 0, 100)) {
-			Log3 ($hash, 3, "$hash->{NAME} attr \"defaultColor\" is deprecated. Please use defaultHue, defaultSat and defaultVal individually.");
 			# defaultColor values are valid. Overwrite current hue/sat/val.
 			$hue = $dcHue;
 			$sat = $dcSat;
@@ -471,7 +474,9 @@ LedController_ParseHSVColor(@) {
 sub
 LedController_SetHSVColor(@) {
 
+
   my ($hash, $hue, $sat, $val, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction) = @_;
+  my $loglevel=($attr{$hash}{verbose}>$attr{global}{verbose})?$attr{$hash}{verbose}:$attr{global}{verbose};
   Log3 ($hash, 5, "$hash->{NAME}: called SetHSVColor $hue, $sat, $val, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction)");
   my $ip = $hash->{IP};
   my $data; 
@@ -506,7 +511,7 @@ LedController_SetHSVColor(@) {
       loglevel   => 5
     };
     
-    Log3 ($hash, 4, "$hash->{NAME}: set HSV color request \n$param");
+    Log3 ($hash, 5, "$hash->{NAME}: set HSV color request \n$param") if ($loglevel>=5);
     LedController_addCall($hash, $param);  
   
     # TODO consolidate into an "_setReadings" 
@@ -539,6 +544,7 @@ LedController_SetRAWColor(@) {
 
 
   my ($hash, $red, $green, $blue, $warmWhite, $coldWhite, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction) = @_;
+  my $loglevel=($attr{$hash}{verbose}>$attr{global}{verbose})?$attr{$hash}{verbose}:$attr{global}{verbose};
   Log3 ($hash, 5, "$hash->{NAME}: called SetRAWColor $red, $green, $blue, $warmWhite, $coldWhite, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction");
   
   my $ip = $hash->{IP};
@@ -577,11 +583,12 @@ LedController_SetRAWColor(@) {
     };
     
     Log3 ($hash, 4, "$hash->{NAME}: set RAW color request r:$red g:$green b:$blue ww:$warmWhite cw:$coldWhite");
-    #Log3 ($hash, 4, "$hash->{NAME}: set RAW color request \n$param");
+    Log3 ($hash, 5, "$hash->{NAME}: set RAW color request \n$param") if ($loglevel>=5);
     LedController_addCall($hash, $param);  
   }
   return undef;
 }
+
 sub
 LedController_ParseSetHSVColor(@) {
 
@@ -665,14 +672,16 @@ LedController_addCall(@) {
 sub
 LedController_doCall(@) {
   my ($hash) = @_;
-  
+   
+  my $loglevel=($attr{$hash}{verbose}>$attr{global}{verbose})?$attr{$hash}{verbose}:$attr{global}{verbose};
+
   return unless scalar @{$hash->{helper}->{cmdQueue}};
   
   # set busy and do it
   $hash->{helper}->{isBusy} = 1;
   my $param = shift @{$hash->{helper}->{cmdQueue}};
-  Log3 ($hash, 5, "$hash->{NAME} send API Call ".Dumper($param));
-  usleep(2000);
+  Log3 ($hash, 5, "$hash->{NAME} send API Call ".Dumper($param)) if($loglevel>=5);
+  # usleep(2000);
   HttpUtils_NonblockingGet($param);
   
   return undef;
