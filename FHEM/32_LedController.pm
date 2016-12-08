@@ -97,10 +97,7 @@ LedController_Set(@) {
   
 	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat val dim dimup dimdown on off rotate raw" if ($cmd eq '?');
 
-    my $loglevel=($attr{$hash}{verbose}>$attr{global}{verbose})?$attr{$hash}{verbose}:$attr{global}{verbose};
-
-	my $descriptor = '';	# What's this???
-                            # pj: I honestly don't know and it's not being used either.
+   my $loglevel=($attr{$hash}{verbose}>$attr{global}{verbose})?$attr{$hash}{verbose}:$attr{global}{verbose};
 	
 	# $colorTemp : Color temperature in Kelvin (K). Can be set in attr. Default 2700K. Used for ???
 	my $colorTemp = AttrVal($hash->{NAME},'colorTemp',0);
@@ -152,7 +149,7 @@ LedController_Set(@) {
 		my $red = hex(substr($args[0],0,2));
 		my $green = hex(substr($args[0],2,2));
 		my $blue = hex(substr($args[0],4,2));
-		Log3 ($hash, 5, "$hash->{NAME} raw: $args[0], r: $red, g: $green, b: $blue");
+		Log3 ($hash, 5, "$hash->{NAME} raw: $args[0], r: $red, g: $green, b: $blue") if ($loglevel >= 5);
 		my ($hue, $sat, $val) = LedController_RGB2HSV($hash, $red, $green, $blue);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 		
@@ -174,7 +171,7 @@ LedController_Set(@) {
 		# add rotation to hue and normalize to 0-359
 		$hue = ($hue + $rotation)%360;
 
-		Log3 ($hash, 5, "$hash->{NAME} setting HUE to $hue, keeping VAL $val and SAT $sat");
+		Log3 ($hash, 5, "$hash->{NAME} setting HUE to $hue, keeping VAL $val and SAT $sat") if ($loglevel >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 	  		
 	} elsif ($cmd eq 'on') {
@@ -219,8 +216,8 @@ LedController_Set(@) {
 		$val = LedController_rangeCheck($dVal, 0, 100)?$dVal:$val; 
 		
 
-		Log3 ($hash, 5, "$hash->{NAME} setting VAL to $val, SAT to $sat and HUE $hue");
-		Log3 ($hash, 5, "$hash->{NAME} args[0] = $args[0], args[1] = $args[1]");
+		Log3 ($hash, 5, "$hash->{NAME} setting VAL to $val, SAT to $sat and HUE $hue") if ($loglevel >= 5);
+		Log3 ($hash, 5, "$hash->{NAME} args[0] = $args[0], args[1] = $args[1]") if ($loglevel >= 5);
 
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
@@ -234,7 +231,7 @@ LedController_Set(@) {
 		my $val = 0;
 		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
-		Log3 ($hash, 5, "$hash->{NAME} setting VAL to $val, keeping HUE $hue and SAT $sat");
+		Log3 ($hash, 5, "$hash->{NAME} setting VAL to $val, keeping HUE $hue and SAT $sat") if ($loglevel >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
 	} elsif ($cmd eq 'val' || $cmd eq 'dim') {
@@ -249,7 +246,7 @@ LedController_Set(@) {
 		
 		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
-		Log3 ($hash, 5, "$hash->{NAME} setting VAL to $val, keeping HUE $hue and SAT $sat");
+		Log3 ($hash, 5, "$hash->{NAME} setting VAL to $val, keeping HUE $hue and SAT $sat") if ($loglevel >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 	        
 	} elsif ($cmd eq "dimup") {
@@ -263,7 +260,7 @@ LedController_Set(@) {
 		$val = ($val<0)?0:($val>100)?100:$val;
 		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
-		Log3 ($hash, 5, "$hash->{NAME} dimming VAL by $dim to $val, keeping HUE $hue and SAT $sat");
+		Log3 ($hash, 5, "$hash->{NAME} dimming VAL by $dim to $val, keeping HUE $hue and SAT $sat") if ($loglevel >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
 	} elsif ($cmd eq "dimdown") {
@@ -277,7 +274,7 @@ LedController_Set(@) {
 		$val = ($val<0)?0:($val>100)?100:$val;
 		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
-		Log3 ($hash, 5, "$hash->{NAME} dimming VAL by $dim to $val, keeping HUE $hue and SAT $sat");
+		Log3 ($hash, 5, "$hash->{NAME} dimming VAL by $dim to $val, keeping HUE $hue and SAT $sat") if ($loglevel >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
 	} elsif ($cmd eq 'sat') {
@@ -292,7 +289,7 @@ LedController_Set(@) {
 		
 		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
 		my $val = ReadingsVal($hash->{NAME}, "val", 0);
-		Log3 ($hash, 5, "$hash->{NAME} setting SAT to $sat, keeping HUE $hue and VAL $val");
+		Log3 ($hash, 5, "$hash->{NAME} setting SAT to $sat, keeping HUE $hue and VAL $val") if ($loglevel >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
 	} elsif ($cmd eq 'hue') {
@@ -307,8 +304,8 @@ LedController_Set(@) {
 		
 		my $val = ReadingsVal($hash->{NAME}, "val", 0);
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
-		Log3 ($hash, 5, "$hash->{NAME} setting HUE to $hue, keeping VAL $val and SAT $sat");
-		Log3 ($hash, 5, "$hash->{NAME} got extended args: t = $fadeTime, q = $doQueue, d=$direction");
+		Log3 ($hash, 5, "$hash->{NAME} setting HUE to $hue, keeping VAL $val and SAT $sat") if ($loglevel >= 5);
+		Log3 ($hash, 5, "$hash->{NAME} got extended args: t = $fadeTime, q = $doQueue, d=$direction") if ($loglevel >= 5);
       
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
@@ -358,7 +355,7 @@ LedController_Attr(@) {
   return "colorTemp must be between 2000 and 10000" if ! LedController_rangeCheck($attribVal, 2000, 10000);
   }
   # TODO: Add checks for defaultColor, defaultHue/Sat/Val here!
-  Log3 ($hash, 4, "$hash->{NAME} attrib $attribName $cmd $attribVal") if $attribVal; 
+  Log3 ($hash, 4, "$hash->{NAME} attrib $attribName $cmd $attribVal") if $attribVal && ($loglevel >= 5); 
   return undef;
 }
 
@@ -386,7 +383,7 @@ LedController_GetConfig(@) {
     parser     =>  \&LedController_ParseConfig,
     callback   =>  \&LedController_callback
   };
-  Log3 ($hash, 4, "$hash->{NAME}: get config request");
+  Log3 ($hash, 4, "$hash->{NAME}: get config request") if ($loglevel >= 4);
   LedController_addCall($hash, $param);
   return undef;
 }
@@ -399,12 +396,12 @@ LedController_ParseConfig(@) {
   my ($hash, $err, $data) = @_;
   my $res;
   
-  Log3 ($hash, 4, "$hash->{NAME}: got config response");
+  Log3 ($hash, 4, "$hash->{NAME}: got config response") if ($loglevel >= 4);
   
   if ($err) {
     Log3 ($hash, 2, "$hash->{NAME}: error $err retriving config");
   } elsif ($data) {
-    Log3 ($hash, 5, "$hash->{NAME}: config response data $data");
+    Log3 ($hash, 5, "$hash->{NAME}: config response data $data") if ($loglevel >= 5);
     eval { 
       $res = JSON->new->utf8(1)->decode($data);
     };
@@ -455,12 +452,12 @@ LedController_ParseHSVColor(@) {
   if ($err) {
     Log3 ($hash, 2, "$hash->{NAME}: error $err retriving HSV color");
   } elsif ($data) {
-      # Log3 ($hash, 5, "$hash->{NAME}: HSV color response data $data");
+      # Log3 ($hash, 5, "$hash->{NAME}: HSV color response data $data") if ($loglevel >= 5);
     eval { 
       $res = JSON->new->utf8(1)->decode($data);
     };
     if ($@) {
-     Log3 ($hash, 4, "$hash->{NAME}: error decoding HSV color response $@");
+     Log3 ($hash, 4, "$hash->{NAME}: error decoding HSV color response $@") if ($loglevel >= 4);
     } else {
  		# not sure when this would happen
  		# answer herrmannj: this is the place for a valid response, aka we got mail ;)
@@ -477,7 +474,7 @@ LedController_SetHSVColor(@) {
 
   my ($hash, $hue, $sat, $val, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction) = @_;
   my $loglevel=($attr{$hash}{verbose}>$attr{global}{verbose})?$attr{$hash}{verbose}:$attr{global}{verbose};
-  Log3 ($hash, 5, "$hash->{NAME}: called SetHSVColor $hue, $sat, $val, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction)");
+  Log3 ($hash, 5, "$hash->{NAME}: called SetHSVColor $hue, $sat, $val, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction)") if ($loglevel >= 5);
   my $ip = $hash->{IP};
   my $data; 
   my $cmd;
@@ -511,7 +508,7 @@ LedController_SetHSVColor(@) {
       loglevel   => 5
     };
     
-    Log3 ($hash, 5, "$hash->{NAME}: set HSV color request \n$param") if ($loglevel>=5);
+    Log3 ($hash, 5, "$hash->{NAME}: set HSV color request \n$param") if ($loglevel>=5) if ($loglevel >= 5);
     LedController_addCall($hash, $param);  
   
     # TODO consolidate into an "_setReadings" 
@@ -519,8 +516,8 @@ LedController_SetHSVColor(@) {
     
     my ($red, $green, $blue)=LedController_HSV2RGB($hue, $sat, $val);
     my $xrgb=sprintf("%02x%02x%02x",$red,$green,$blue);
-    Log3 ($hash, 5, "$hash->{NAME}: calculated RGB as $xrgb");
-    Log3 ($hash, 4, "$hash->{NAME}: begin Readings Update\n   hue: $hue\n   sat: $sat\n   val:$val\n   ct : $colorTemp\n   HSV: $hue,$sat,$val\n   RGB: $xrgb");
+    Log3 ($hash, 5, "$hash->{NAME}: calculated RGB as $xrgb") if ($loglevel >= 5);
+    Log3 ($hash, 4, "$hash->{NAME}: begin Readings Update\n   hue: $hue\n   sat: $sat\n   val:$val\n   ct : $colorTemp\n   HSV: $hue,$sat,$val\n   RGB: $xrgb") if ($loglevel >= 4);
 
     readingsBeginUpdate($hash);
     readingsBulkUpdate($hash, 'hue', $hue);
@@ -582,8 +579,8 @@ LedController_SetRAWColor(@) {
       loglevel   => 5
     };
     
-    Log3 ($hash, 4, "$hash->{NAME}: set RAW color request r:$red g:$green b:$blue ww:$warmWhite cw:$coldWhite");
-    Log3 ($hash, 5, "$hash->{NAME}: set RAW color request \n$param") if ($loglevel>=5);
+    Log3 ($hash, 4, "$hash->{NAME}: set RAW color request r:$red g:$green b:$blue ww:$warmWhite cw:$coldWhite") if ($loglevel >= 4);
+    Log3 ($hash, 5, "$hash->{NAME}: set RAW color request \n$param") if ($loglevel>=5) if ($loglevel >= 5);
     LedController_addCall($hash, $param);  
   }
   return undef;
@@ -601,7 +598,7 @@ LedController_ParseSetHSVColor(@) {
 	if ($err) {
 		Log3 ($hash, 2, "$hash->{NAME}: error $err setting HSV color");
 	} elsif ($data) {
-        #Log3 ($hash, 5, "$hash->{NAME}: HSV color response data $data");
+        #Log3 ($hash, 5, "$hash->{NAME}: HSV color response data $data") if ($loglevel >= 5);
 		eval { 
 			$res = JSON->new->utf8(1)->decode($data);
 		};
@@ -624,12 +621,12 @@ LedController_ParseSetRAWColor(@) {
 	my ($hash, $err, $data) = @_;
 	my $res;
 	
-	Log3 ($hash, 4, "$hash->{NAME}: got HSV color response");
+	Log3 ($hash, 4, "$hash->{NAME}: got HSV color response") if ($loglevel >= 4);
 	$hash->{helper}->{isBusy}=0;
 	if ($err) {
 		Log3 ($hash, 2, "$hash->{NAME}: error $err setting RAW color");
 	} elsif ($data) {
-		Log3 ($hash, 5, "$hash->{NAME}: RAW color response data $data");
+		Log3 ($hash, 5, "$hash->{NAME}: RAW color response data $data") if ($loglevel >= 5);
 		eval { 
 			$res = JSON->new->utf8(1)->decode($data);
 		};
@@ -654,7 +651,7 @@ sub
 LedController_addCall(@) {
   my ($hash, $param) = @_;
   
-  #Log3 ($hash, 5, "$hash->{NAME}: add to queue: \n\n". Dumper $param);
+  Log3 ($hash, 5, "$hash->{NAME}: add to queue: \n\n". Dumper $param) if ($loglevel >= 5);
   
   # add to queue
   push @{$hash->{helper}->{cmdQueue}}, $param;
@@ -677,8 +674,7 @@ LedController_doCall(@) {
   # set busy and do it
   $hash->{helper}->{isBusy} = 1;
   my $param = shift @{$hash->{helper}->{cmdQueue}};
-  Log3 ($hash, 5, "$hash->{NAME} send API Call ".Dumper($param));
-  usleep(2000);
+  Log3 ($hash, 5, "$hash->{NAME} send API Call ".Dumper($param)) if ($loglevel >= 5);
   HttpUtils_NonblockingGet($param);
   
   return undef;
@@ -703,129 +699,6 @@ LedController_callback(@) {
   return undef;
 }
 
-###############################################################################
-#
-# helper functions
-#
-###############################################################################
-
-
-sub
-LedController_ParseSetHSVColor(@) {
-
-	#my ($param, $err, $data) = @_;
-	#my ($hash) = $param->{hash};
-	my ($hash, $err, $data) = @_;
-	my $res;
-	
-	Log3 ($hash, 4, "$hash->{NAME}: got HSV color response");
-	$hash->{helper}->{isBusy}=0;
-	if ($err) {
-		Log3 ($hash, 2, "$hash->{NAME}: error $err setting HSV color");
-	} elsif ($data) {
-        #Log3 ($hash, 5, "$hash->{NAME}: HSV color response data $data");
-		eval { 
-			$res = JSON->new->utf8(1)->decode($data);
-		};
-		if ($@) {
-			Log3 ($hash, 2, "$hash->{NAME}: error decoding HSV color response $@");
-		} else {
-			#if $res->{success} eq 'true';
-		} 
-	} else {
-		Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> setting HSV color"); 
-	}
-	return undef;
-}
-
-sub
-LedController_ParseSetRAWColor(@) {
-
-	#my ($param, $err, $data) = @_;
-	#my ($hash) = $param->{hash};
-	my ($hash, $err, $data) = @_;
-	my $res;
-	
-	Log3 ($hash, 4, "$hash->{NAME}: got HSV color response");
-	$hash->{helper}->{isBusy}=0;
-	if ($err) {
-		Log3 ($hash, 2, "$hash->{NAME}: error $err setting RAW color");
-	} elsif ($data) {
-		Log3 ($hash, 5, "$hash->{NAME}: RAW color response data $data");
-		eval { 
-			$res = JSON->new->utf8(1)->decode($data);
-		};
-		if ($@) {
-			Log3 ($hash, 2, "$hash->{NAME}: error decoding RAW color response $@");
-		} else {
-			#if $res->{success} eq 'true';
-		} 
-	} else {
-		Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> setting RAW color"); 
-	}
-	return undef;
-}
-
-###############################################################################
-#
-# queue and send a api call
-#
-###############################################################################
-
-sub
-LedController_addCall(@) {
-  my ($hash, $param) = @_;
-  
-  #Log3 ($hash, 5, "$hash->{NAME}: add to queue: \n\n". Dumper $param);
-  
-  # add to queue
-  push @{$hash->{helper}->{cmdQueue}}, $param;
-  
-  # return if busy
-  return if $hash->{helper}->{isBusy};
-  
-  # do the call
-  LedController_doCall($hash);
-  
-  return undef;
-}
-
-sub
-LedController_doCall(@) {
-  my ($hash) = @_;
-   
-  my $loglevel=($attr{$hash}{verbose}>$attr{global}{verbose})?$attr{$hash}{verbose}:$attr{global}{verbose};
-
-  return unless scalar @{$hash->{helper}->{cmdQueue}};
-  
-  # set busy and do it
-  $hash->{helper}->{isBusy} = 1;
-  my $param = shift @{$hash->{helper}->{cmdQueue}};
-  Log3 ($hash, 5, "$hash->{NAME} send API Call ".Dumper($param)) if($loglevel>=5);
-  # usleep(2000);
-  HttpUtils_NonblockingGet($param);
-  
-  return undef;
-}
-
-sub
-LedController_callback(@) {
-  my ($param, $err, $data) = @_;
-	my ($hash) = $param->{hash};
-	
-	# TODO generic error handling
-  
-  $hash->{helper}->{isBusy} = 0;
-  
-  # do the result-parser callback
-  my $parser = $param->{parser};
-  &$parser($hash, $err, $data);
-  
-  # more calls ?
-  LedController_doCall($hash) if scalar @{$hash->{helper}->{cmdQueue}};
-  
-  return undef;
-}
 
 ###############################################################################
 #
@@ -907,14 +780,14 @@ LedController_HSV2RGB(@)
 sub
 LedController_ArgsHelper(@) {
 	my ($hash, $a, $b) = @_;	
-	Log3 ($hash, 5, "$hash->{NAME} extended args raw: a=$a, b=$b");
+	Log3 ($hash, 5, "$hash->{NAME} extended args raw: a=$a, b=$b") if ($loglevel >= 5);
 	my $fadeTime = AttrVal($hash->{NAME}, 'defaultRamp',0);
-	Log3 ($hash, 5, "$hash->{NAME} t= $fadeTime");
+	Log3 ($hash, 5, "$hash->{NAME} t= $fadeTime") if ($loglevel >= 5);
 	my $doQueue = 'false';
 	my $d = '1';
 	if(LedController_isNumeric($a)){
 		$fadeTime=$a*1000;
-		Log3 ($hash, 5, "$hash->{NAME} a is numeric ($a), t= $fadeTime");
+		Log3 ($hash, 5, "$hash->{NAME} a is numeric ($a), t= $fadeTime") if ($loglevel >= 5);
 			if ($b ne ''){
 				$doQueue = ($b =~m/.*[qQ].*/)?'true':'false';
 				$d = ($b =~m/.*[lL].*/)?0:1;
@@ -923,12 +796,12 @@ LedController_ArgsHelper(@) {
 			$doQueue = ($a =~m/.*[qQ].*/)?'true':'false';
 			$d = ($a =~m/.*[lL].*/)?0:1;
 		}
-	Log3 ($hash, 5, "$hash->{NAME} extended args: t = $fadeTime, q = $doQueue, d = $d");
+	Log3 ($hash, 5, "$hash->{NAME} extended args: t = $fadeTime, q = $doQueue, d = $d") if ($loglevel >= 5);
 	return ($fadeTime, $doQueue, $d);
 }
 
 sub LedController_isNumeric{
- defined $_[0] && $_[0] =~ /^[+-]?\d+.?\d*$/;
+ defined $_[0] && $_[0] =~ /^[+-]?\d+.?\d*/;
 }
 
 sub LedController_rangeCheck(@){
