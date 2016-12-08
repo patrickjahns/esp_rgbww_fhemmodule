@@ -26,7 +26,7 @@ use warnings;
 
 use Time::HiRes;
 use Time::HiRes qw(usleep nanosleep);
-use JSON;
+use JSON::XS;
 use Data::Dumper;
 
 $Data::Dumper::Indent = 1;
@@ -45,7 +45,7 @@ LedController_Initialize(@) {
   $hash->{AttrFn}               = 'LedController_Attr';
   $hash->{NotifyFn}             = 'LedController_Notify';
   $hash->{ReadFn}               = 'LedController_Read';
-  $hash->{helper}->{oldVal}	    = 100;
+  $hash->{helper}->{oldVal}	  = 100;
   # why define this here? The "on" routine uses the literal anyway
   
   $hash->{AttrList}     = "defaultRamp defaultColor defaultHue defaultSat defaultVal colorTemp"
@@ -405,6 +405,8 @@ LedController_ParseConfig(@) {
   } elsif ($data) {
     Log3 ($hash, 5, "$hash->{NAME}: config response data $data") if ($loglevel >= 5);
     eval { 
+    	# TODO: Can't we just store the instance of the JSON parser somewhere?
+    	# Would that improve performance???
       $res = JSON->new->utf8(1)->decode($data);
     };
     if ($@) {
@@ -463,6 +465,7 @@ LedController_ParseHSVColor(@) {
     } else {
  		# not sure when this would happen
  		# answer herrmannj: this is the place for a valid response, aka we got mail ;)
+ 		# TODO: Actually do something with the hash and set values?
     } 
   } else {
     Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> retriving HSV color"); 
