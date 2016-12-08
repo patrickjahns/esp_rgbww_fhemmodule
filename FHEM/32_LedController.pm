@@ -185,13 +185,13 @@ LedController_Set(@) {
 		Log3 ($hash, 3, "$hash->{NAME}  Begin of on ".(time - $hash->{helper}->{lastTime})." (".(time - $hash->{helper}->{startTime}).")") ; $hash->{helper}->{lastTime}=time;
 		
 		# Add check to only do something if the controller is REALLY turned off, i.e. val eq 0
-		my $val = ReadingsVal($hash->{NAME}, "state", "off");
-		return undef if ($val eq "on"); 
+		my $state = ReadingsVal($hash->{NAME}, "state", "off");
+		return undef if ($state eq "on"); 
 		
 		# OK, state was off 
 		# val initialized from internal value.
 		# if internal was 0, default to 100;
-		$val = $hash->{helper}->{oldVal};
+		my $val = $hash->{helper}->{oldVal};
 		if ($val eq 0){
 			$val = 100;
 		}
