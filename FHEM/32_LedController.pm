@@ -193,16 +193,18 @@ LedController_Set(@) {
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
 		
 		# Load default color from attributes (DEPRECATED)
-		my $defaultColor=AttrVal($hash->{NAME},'defaultColor',0);
-		Log3 ($hash, 2, "$hash->{NAME} attr \"defaultColor\" is deprecated. Please use the new Attrs defaultHue, defaultSat and defaultVal individually.") if (! $defaultColor eq "");
+		my $defaultColor = AttrVal($hash->{NAME},'defaultColor',undef);
+		if (defined $defaultColor){
+			Log3 ($hash, 2, "$hash->{NAME} attr \"defaultColor\" is deprecated. Please use the new Attrs defaultHue, defaultSat and defaultVal individually.") 
 
-		# Split defaultColor and if all three components pass rangeCheck set them.
-		my($dcHue, $dcSat, $dcVal) = split(',',$defaultColor );
-		if( LedController_rangeCheck($dcHue, 0, 359) && LedController_rangeCheck($dcSat, 0, 100) && LedController_rangeCheck($dcVal, 0, 100)) {
+			# Split defaultColor and if all three components pass rangeCheck set them.
+			my($dcHue, $dcSat, $dcVal) = split(',',$defaultColor );
+			if( LedController_rangeCheck($dcHue, 0, 359) && LedController_rangeCheck($dcSat, 0, 100) && LedController_rangeCheck($dcVal, 0, 100)) {
 			# defaultColor values are valid. Overwrite current hue/sat/val.
-			$hue = $dcHue;
-			$sat = $dcSat;
-			$val = $dcVal;
+				$hue = $dcHue;
+				$sat = $dcSat;
+				$val = $dcVal;
+			}
 		}
 
 		# defaultHue/Sat/Val will overwrite old values if present because this is "on" cmd.
