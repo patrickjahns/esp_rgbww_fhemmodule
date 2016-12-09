@@ -46,9 +46,6 @@ LedController_Initialize(@) {
   $hash->{AttrFn}               = 'LedController_Attr';
   $hash->{NotifyFn}             = 'LedController_Notify';
   $hash->{ReadFn}               = 'LedController_Read';
-  $hash->{helper}->{oldVal}	  = 100;
-  # why define this here? The "on" routine uses the literal anyway
-  
   $hash->{AttrList}     = "defaultRamp defaultColor defaultHue defaultSat defaultVal colorTemp"
                           ." $readingFnAttributes";
   require "HttpUtils.pm";
@@ -80,7 +77,7 @@ LedController_Define($$) {
   # TODO remove, fixeg loglevel 5 only for debugging
   #$attr{$hash->{NAME}}{verbose} = 3;
   LedController_GetConfig($hash);
-  
+  $hash->{helper}->{oldVal}	  = 100;
   return undef;
   return "wrong syntax: define <name> LedController <type> <ip-or-hostname>" if(@a != 4);  
   return "$hash->{LEDTYPE} is not supported at $hash->{CONNECTION} ($hash->{IP})";
@@ -98,15 +95,12 @@ LedController_Set(@) {
   
 	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat val dim dimup dimdown on off rotate raw" if ($cmd eq '?');
 
-	$hash->{helper}->{startTime} = time;
-	$hash->{helper}->{lastTime} = $hash->{helper}->{startTime};
-	
-#	Log3 ($hash, 3, "$hash->{NAME}  Begin of _Set ".(time - $hash->{helper}->{lastTime})." (".(time - $hash->{helper}->{startTime}).")") ; $hash->{helper}->{lastTime}=time;
    $hash->{helper}->{logLevel} = (AttrVal($hash->{NAME},"verbose",0)>$attr{global}{verbose})?AttrVal($hash->{NAME},"verbose",0):$attr{global}{verbose};
     Log3($hash,4, "\nglobal LogLevel: $attr{global}{verbose}\nmodule LogLevel: ".AttrVal($hash->{NAME},'verbose',0)."\ncompound LogLevel: $hash->{helper}->{logLevel}");	
-	# $colorTemp : Color temperature in Kelvin (K). Can be set in attr. Default 2700K. Used for ???
-	my $colorTemp = AttrVal($hash->{NAME},'colorTemp',0);
-	$colorTemp = ($colorTemp)?$colorTemp:2700;
+	# $colorTemp : Color temperature in Kelvin (K). Can be set in attr. Default 2700K.
+	# Note: rangeCheck is performed in attr method, so a simple AttrVal with 2700 as default value is enough here.
+	my $colorTemp = AttrVal($hash->{NAME},'colorTemp',2700);
+	
 	
 	
 	Log3 ($hash, 5, "$hash->{NAME} (Set) called with $cmd, busy flag is $hash->{helper}->{isBusy}\n name is $name, args ".Dumper(@args)) if ($hash->{helper}->{logLevel}>=5);
@@ -187,10 +181,6 @@ LedController_Set(@) {
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 	  		
 	} elsif ($cmd eq 'on') {
-		# added an attr "defaultColor" as a h,s,v tupel. This will be used as the default "on" color
-		# if you want to keep the hue/sat from before, use "dim" or it's equivalent "val"
-		Log3 ($hash, 3, "$hash->{NAME}  Begin of on ".(time - $hash->{helper}->{lastTime})." (".(time - $hash->{helper}->{startTime}).")") ; $hash->{helper}->{lastTime}=time;
-		
 		# Add check to only do something if the controller is REALLY turned off, i.e. val eq 0
 		my $state = ReadingsVal($hash->{NAME}, "state", "off");
 		return undef if ($state eq "on"); 
@@ -238,8 +228,6 @@ LedController_Set(@) {
 
 
 	} elsif ($cmd eq 'off') {
-
-		Log3 ($hash, 3, "$hash->{NAME} Begin of Off ".(time - $hash->{helper}->{lastTime})." (".(time - $hash->{helper}->{startTime}).")") ; $hash->{helper}->{lastTime}=time;
 		# Store old val in internal for use by on command.
 		$hash->{helper}->{oldVal} = ReadingsVal($hash->{NAME}, "val", 0);
 
@@ -371,7 +359,7 @@ LedController_Attr(@) {
   return "colorTemp must be between 2000 and 10000" if ! LedController_rangeCheck($attribVal, 2000, 10000);
   }
   # TODO: Add checks for defaultColor, defaultHue/Sat/Val here!
-  Log3 ($hash, 4, "$hash->{NAME} attrib $attribName $cmd $attribVal") if $attribVal && ($hash->{helper}->{logLevel} >= 5); 
+  Log3 ($hash, 4, "$hash->{NAME} attrib $attribName $cmd $attribVal") if $attribVal && ($hash->{helper}->{logLevel} >= 4); 
   return undef;
 }
 
@@ -528,12 +516,7 @@ LedController_SetHSVColor(@) {
     };
     
     Log3 ($hash, 5, "$hash->{NAME}: set HSV color request \n$param") if ($hash->{helper}->{logLevel}>=5);
-	Log3 ($hash, 3, "$hash->{NAME} Adding call to queue".(time - $hash->{helper}->{lastTime})." (".(time - $hash->{helper}->{startTime}).")") ; $hash->{helper}->{lastTime}=time;
-
     LedController_addCall($hash, $param);  
-  
-	Log3 ($hash, 3, "$hash->{NAME} Call added ".(time - $hash->{helper}->{lastTime})." (".(time - $hash->{helper}->{startTime}).")") ; $hash->{helper}->{lastTime}=time;
-	
   }
   return undef;
 }
@@ -704,9 +687,7 @@ LedController_callback(@) {
 	# Do readings update
 	
 	if( ! defined $err || $err eq ""){
-		Log3 ($hash, 3, "$hash->{NAME} Beginning readings update") ; $hash->{helper}->{lastTime}=time;
 		LedController_doReadingsUpdate($hash, $param->{cmd});
-		Log3 ($hash, 3, "$hash->{NAME} Readings update DONE. ".(time - $hash->{helper}->{lastTime})) ; $hash->{helper}->{lastTime}=time;
 	} else {
 		Log3 ($hash, 3, "$hash->{NAME} Readings NOT updated, received Error: ".$err);
 	}
@@ -730,7 +711,6 @@ sub LedController_doReadingsUpdate(@){
 	
 	if( defined $cmd->{hsv}){
 		# Must be a setHSV command, let's update the readings...
-	
 	    my ($red, $green, $blue)=LedController_HSV2RGB($cmd->{hsv}->{h}, $cmd->{hsv}->{s}, $cmd->{hsv}->{v});
 		my $xrgb=sprintf("%02x%02x%02x",$red,$green,$blue);
 		Log3 ($hash, 5, "$hash->{NAME}: calculated RGB as $xrgb") if ($hash->{helper}->{logLevel} >= 5);
@@ -754,27 +734,29 @@ sub LedController_doReadingsUpdate(@){
 	# RAW mode is not yet done.
 	# I'll need to think of a way to at least approximate HSV values for this while taking into account WW/CW and so on.
 	# Should be doable, but not necessarily correct since RAW has a larger color space than RGB/HSV does.
-	
-#		my ($red, $green, $blue)=LedController_HSV2RGB($hue, $sat, $val);
-#		my $xrgb=sprintf("%02x%02x%02x",$red,$green,$blue);
-#		Log3 ($hash, 5, "$hash->{NAME}: calculated RGB as $xrgb") if ($hash->{helper}->{logLevel} >= 5);
-#		Log3 ($hash, 4, "$hash->{NAME}: begin Readings Update\n   hue: $hue\n   sat: $sat\n   val:$val\n   ct : $colorTemp\n   HSV: $hue,$sat,$val\n   RGB: $xrgb") if ($hash->{helper}->{logLevel} >= 4);
-#		Log3 ($hash, 3, "$hash->{NAME} values prepared for ReadingUpdate ".(time - $hash->{helper}->{lastTime})." (".(time - $hash->{helper}->{startTime}).")") ; $hash->{helper}->{lastTime}=time;
-
-#		readingsBeginUpdate($hash);
-#		readingsBulkUpdate($hash, 'hue', $hue);
-#		readingsBulkUpdate($hash, 'sat', $sat);
-#		readingsBulkUpdate($hash, 'val', $val);
-#		readingsBulkUpdate($hash, 'ct' , $colorTemp);
-#		readingsBulkUpdate($hash, 'hsv', "$hue,$sat,$val");
-#		readingsBulkUpdate($hash, 'rgb', $xrgb);
-#		readingsBulkUpdate($hash, 'state', ($val== 0)?'off':'on');
-#		readingsEndUpdate($hash, 1);
-#		Log3 ($hash, 3, "$hash->{NAME} Done with readingsUpdate ".(time - $hash->{helper}->{lastTime})." (".(time - $hash->{helper}->{startTime}).")") ; $hash->{helper}->{lastTime}=time;
+		
+	# Idea: Add WW and CW together in order to get the amount of white light.
+	# The way I understand the colorTemp code in the controller, it will calculate white from RGB and then split up the white to WW/CW according to
+	# the colortemp. This should be reversable by simply adding them back together.
+	# if( (255 - max(r,g,b)) > WWCW)
+	#     r += (255 - max(r,g,b));
+	#     g += (255 - max(r,g,b));
+	#     b += (255 - max(r,g,b));
+	# else
+	#     r += WWCW;
+	#     g += WWCW;
+	#     b += WWCW;
+	# fi
+	# 
+	# Now just RGB2HSV and set readings.
+	#
+	# This would only be an approximation, but should be pretty close I think.
+	#
+	# NOTE: It would be pretty cool if we knew which mode the controller is running in.
+	# e.g. if we knew controller is running in RGB (i.e. no CW/WW strips attached) we could do an exact conversion / ignore the WW/CW values.
+		
+		
 	}
-
-
-
 }
 
 
