@@ -95,11 +95,12 @@ LedController_Set(@) {
   
 	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat val dim dimup dimdown on off rotate raw" if ($cmd eq '?');
 
-    $hash->{helper}->{logLevel} = ($attr{$hash}{verbose}>$attr{global}{verbose})?$attr{$hash}{verbose}:$attr{global}{verbose};
+   $hash->{helper}->{logLevel} = (AttrVal($hash->{NAME},"verbose",0)>$attr{global}{verbose})?AttrVal($hash->{NAME},"verbose",0):$attr{global}{verbose};
+    Log3($hash,4, "\nglobal LogLevel: $attr{global}{verbose}\nmodule LogLevel: ".AttrVal($hash->{NAME},'verbose',0)."\ncompound LogLevel: $hash->{helper}->{logLevel}");	
+	# $colorTemp : Color temperature in Kelvin (K). Can be set in attr. Default 2700K.
+	# Note: rangeCheck is performed in attr method, so a simple AttrVal with 2700 as default value is enough here.
+	my $colorTemp = AttrVal($hash->{NAME},'colorTemp',2700);
 	
-	# $colorTemp : Color temperature in Kelvin (K). Can be set in attr. Default 2700K. Used for ???
-	my $colorTemp = AttrVal($hash->{NAME},'colorTemp',0);
-	$colorTemp = ($colorTemp)?$colorTemp:2700;
 	
 	
 	Log3 ($hash, 5, "$hash->{NAME} (Set) called with $cmd, busy flag is $hash->{helper}->{isBusy}\n name is $name, args ".Dumper(@args)) if ($hash->{helper}->{logLevel}>=5);
@@ -109,7 +110,14 @@ LedController_Set(@) {
 	# $doQueue (true|false): Should this operation be queued or executed directly on the controller?
 	# $direction: Take the short route on HSV for the transition (0) or the long one (1)
 	# SHUZZ: These arguments may be added to any set command here, therefore we can decode them now.
-	my ($fadeTime, $doQueue, $direction) = LedController_ArgsHelper($hash, $args[1], $args[2]);
+    my $fadeTime;
+    my $doQueue;
+    my $direction;
+	if ($cmd eq 'on' || $cmd eq 'off'){
+        ($fadeTime, $doQueue, $direction) = LedController_ArgsHelper($hash, $args[0], $args[1]);
+    } else {
+        ($fadeTime, $doQueue, $direction) = LedController_ArgsHelper($hash, $args[1], $args[2]);
+    }
 
 	
 	if ($cmd eq 'hsv') {
