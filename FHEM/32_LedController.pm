@@ -75,7 +75,7 @@ LedController_Define($$) {
   @{$hash->{helper}->{cmdQueue}} = ();
   $hash->{helper}->{isBusy} = 0;
   # TODO remove, fixeg loglevel 5 only for debugging
-  #$attr{$hash->{NAME}}{verbose} = 3;
+  #$attr{$hash->{NAME}}{verbose} = 5;
   LedController_GetConfig($hash);
   $hash->{helper}->{oldVal}	  = 100;
   return undef;
@@ -102,7 +102,6 @@ LedController_Set(@) {
 	my $colorTemp = AttrVal($hash->{NAME},'colorTemp',2700);
 	
 	
-	
 	Log3 ($hash, 5, "$hash->{NAME} (Set) called with $cmd, busy flag is $hash->{helper}->{isBusy}\n name is $name, args ".Dumper(@args)) if ($hash->{helper}->{logLevel}>=5);
 	Log3 ($hash, 3, "$hash->{NAME} (Set) called with $cmd, busy flag is $hash->{helper}->{isBusy}");  
 
@@ -113,7 +112,7 @@ LedController_Set(@) {
     my $fadeTime;
     my $doQueue;
     my $direction;
-	if ($cmd eq 'on' || $cmd eq 'off'){
+	if ($cmd eq 'on' || $cmd eq 'off' || $cmd eq "pause"){
         ($fadeTime, $doQueue, $direction) = LedController_ArgsHelper($hash, $args[0], $args[1]);
     } else {
         ($fadeTime, $doQueue, $direction) = LedController_ArgsHelper($hash, $args[1], $args[2]);
@@ -170,9 +169,9 @@ LedController_Set(@) {
 		}
 		
 		# get current hsv from Readings
-	  	my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
-		my $val = ReadingsVal($hash->{NAME}, "val", 0);
-		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
+	  	my $hue = InternalVal($hash->{NAME}, "hueValue", 0);
+		my $val = InternalVal($hash->{NAME}, "valValue", 0);
+		my $sat = InternalVal($hash->{NAME}, "satValue", 0);
 
 		# add rotation to hue and normalize to 0-359
 		$hue = ($hue + $rotation)%360;
@@ -182,7 +181,7 @@ LedController_Set(@) {
 	  		
 	} elsif ($cmd eq 'on') {
 		# Add check to only do something if the controller is REALLY turned off, i.e. val eq 0
-		my $state = ReadingsVal($hash->{NAME}, "state", "off");
+		my $state = InternalVal($hash->{NAME}, "stateValue", "off");
 		return undef if ($state eq "on"); 
 		
 		# OK, state was off 
@@ -192,8 +191,8 @@ LedController_Set(@) {
 		if ($val eq 0){
 			$val = 100;
 		}
-	  	my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
-		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
+	  	my $hue = InternalVal($hash->{NAME}, "hueValue", 0);
+		my $sat = InternalVal($hash->{NAME}, "satValue", 0);
 		
 		# Load default color from attributes (DEPRECATED)
 		my $defaultColor = AttrVal($hash->{NAME},'defaultColor',undef);
@@ -233,8 +232,8 @@ LedController_Set(@) {
 
 		# Now set val to zero, read other values and "turn out the light"...
 		my $val = 0;
-		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
-		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
+		my $hue = InternalVal($hash->{NAME}, "hueValue", 0);
+		my $sat = InternalVal($hash->{NAME}, "satValue", 0);
 		Log3 ($hash, 5, "$hash->{NAME} setting VAL to $val, keeping HUE $hue and SAT $sat") if ($hash->{helper}->{logLevel} >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
@@ -248,8 +247,8 @@ LedController_Set(@) {
 			return "$hash->{NAME} value must be a number from 0-100";
 		}
 		
-		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
-		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
+		my $hue = InternalVal($hash->{NAME}, "hueValue", 0);
+		my $sat = InternalVal($hash->{NAME}, "satValue", 0);
 		Log3 ($hash, 5, "$hash->{NAME} setting VAL to $val, keeping HUE $hue and SAT $sat") if ($hash->{helper}->{logLevel} >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 	        
@@ -257,13 +256,13 @@ LedController_Set(@) {
 
 		# dimming value is first parameter, add to $val and keep hue and sat the way they were.
 		my $dim = $args[0];
-		my $val = ReadingsVal($hash->{NAME}, "val", 0);
+		my $val = InternalVal($hash->{NAME}, "valValue", 0);
 		$val = $val + $dim;
 		
 		#sanity check needs to run both ways, dim could be set to -200 and we'd end up with a negative reading.
 		$val = ($val<0)?0:($val>100)?100:$val;
-		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
-		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
+		my $hue = InternalVal($hash->{NAME}, "hueValue", 0);
+		my $sat = InternalVal($hash->{NAME}, "satValue", 0);
 		Log3 ($hash, 5, "$hash->{NAME} dimming VAL by $dim to $val, keeping HUE $hue and SAT $sat") if ($hash->{helper}->{logLevel} >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
@@ -271,13 +270,13 @@ LedController_Set(@) {
 
 		# dimming value is first parameter, subtract from $val and keep hue and sat the way they were.
 		my $dim = $args[0];
-		my $val = ReadingsVal($hash->{NAME}, "val", 0);
+		my $val = InternalVal($hash->{NAME}, "valValue", 0);
 		$val = $val - $dim;
 
 		#sanity check needs to run both ways, dim could be set to -200 and we'd end up with a negative reading.
 		$val = ($val<0)?0:($val>100)?100:$val;
-		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
-		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
+		my $hue = InternalVal($hash->{NAME}, "hueValue", 0);
+		my $sat = InternalVal($hash->{NAME}, "satValue", 0);
 		Log3 ($hash, 5, "$hash->{NAME} dimming VAL by $dim to $val, keeping HUE $hue and SAT $sat") if ($hash->{helper}->{logLevel} >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
@@ -291,8 +290,8 @@ LedController_Set(@) {
 			return "$hash->{NAME} sat value must be a number from 0-100";
 		}
 		
-		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
-		my $val = ReadingsVal($hash->{NAME}, "val", 0);
+		my $hue = InternalVal($hash->{NAME}, "hueValue", 0);
+		my $val = InternalVal($hash->{NAME}, "valValue", 0);
 		Log3 ($hash, 5, "$hash->{NAME} setting SAT to $sat, keeping HUE $hue and VAL $val") if ($hash->{helper}->{logLevel} >= 5);
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
@@ -306,8 +305,8 @@ LedController_Set(@) {
 			return "$hash->{NAME} hue value must be a number from 0-359";
 		}
 		
-		my $val = ReadingsVal($hash->{NAME}, "val", 0);
-		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
+		my $val = InternalVal($hash->{NAME}, "valValue", 0);
+		my $sat = InternalVal($hash->{NAME}, "satValue", 0);
 		Log3 ($hash, 5, "$hash->{NAME} setting HUE to $hue, keeping VAL $val and SAT $sat") if ($hash->{helper}->{logLevel} >= 5);
 		Log3 ($hash, 5, "$hash->{NAME} got extended args: t = $fadeTime, q = $doQueue, d=$direction") if ($hash->{helper}->{logLevel} >= 5);
       
@@ -319,10 +318,9 @@ LedController_Set(@) {
 		# Will stay at the current color for $fadetime seconds.
 		# NOTE: Does not make sense without $doQueue == "true".
 		# TODO: Add a check for queueing = true? Or just execute anyway?
-		my $val = ReadingsVal($hash->{NAME}, "val", 0);
-		my $hue = ReadingsVal($hash->{NAME}, "hue", 0);
-		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
-		my ($fadeTime, $doQueue, $direction) = LedController_ArgsHelper($hash, $args[0], $args[1]);
+		my $val = InternalVal($hash->{NAME}, "valValue", 0);
+		my $hue = InternalVal($hash->{NAME}, "hueValue", 0);
+		my $sat = InternalVal($hash->{NAME}, "satValue", 0);
 		if ($fadeTime eq 0 || $doQueue eq 'false'){
 			Log3 ($hash, 3, "$hash->{NAME} Note: pause only makes sense if fadeTime is > 0 AND if queueing is activated for command!");
 		}
@@ -644,6 +642,9 @@ LedController_addCall(@) {
   # add to queue
   push @{$hash->{helper}->{cmdQueue}}, $param;
   
+  # Update internals so next cmd can get correct starting values.
+  LedController_doInternalReadingsUpdate($hash, $param->{cmd});
+  
   # return if busy
   return if $hash->{helper}->{isBusy};
   
@@ -704,16 +705,40 @@ LedController_callback(@) {
 ###############################################################################
 
 
-sub LedController_doReadingsUpdate(@){
+sub LedController_doInternalReadingsUpdate(@){
 
 	my ($hash, $cmd) = @_;
-
 	
 	if( defined $cmd->{hsv}){
 		# Must be a setHSV command, let's update the readings...
 	    my ($red, $green, $blue)=LedController_HSV2RGB($cmd->{hsv}->{h}, $cmd->{hsv}->{s}, $cmd->{hsv}->{v});
 		my $xrgb=sprintf("%02x%02x%02x",$red,$green,$blue);
-		Log3 ($hash, 5, "$hash->{NAME}: calculated RGB as $xrgb") if ($hash->{helper}->{logLevel} >= 5);
+		my $hsvString = "$cmd->{hsv}->{h},$cmd->{hsv}->{s},$cmd->{hsv}->{v}";
+		$hash->{hueValue} = $cmd->{hsv}->{h};
+		$hash->{satValue} = $cmd->{hsv}->{s};
+		$hash->{valValue} = $cmd->{hsv}->{v};
+		$hash->{ctValue} = $cmd->{hsv}->{ct};
+		$hash->{hsvValue} = $hsvString;
+		$hash->{rgbValue} = $xrgb;
+		$hash->{stateValue} = ($cmd->{hsv}->{v}== 0)?'off':'on';
+		Log3 ($hash, 3, "$hash->{NAME} DEBUG: Internal hue - helper: ".InternalVal($hash->{NAME}, "hueValue", 0)." and direct: ".$hash->{valValue});  
+
+	} else {
+		Log3 ($hash, 3, "$hash->{NAME} DEBUG: doInternalReadingsUpdate: no hsv in cmd hash.");  
+	
+	}
+
+}
+
+
+sub LedController_doReadingsUpdate(@){
+
+	my ($hash, $cmd) = @_;
+	
+	if( defined $cmd->{hsv}){
+		# Must be a setHSV command, let's update the readings...
+	    my ($red, $green, $blue)=LedController_HSV2RGB($cmd->{hsv}->{h}, $cmd->{hsv}->{s}, $cmd->{hsv}->{v});
+		my $xrgb=sprintf("%02x%02x%02x",$red,$green,$blue);
 		Log3 ($hash, 4, "$hash->{NAME}: begin Readings Update\n   hue: $cmd->{hsv}->{h}\n   sat: $cmd->{hsv}->{s}\n   val:$cmd->{hsv}->{v}\n   ct : $cmd->{hsv}->{ct}\n   HSV: $cmd->{hsv}->{h},$cmd->{hsv}->{s},$cmd->{hsv}->{v}\n   RGB: $xrgb") if ($hash->{helper}->{logLevel} >= 4);
 
 		readingsBeginUpdate($hash);
@@ -730,6 +755,7 @@ sub LedController_doReadingsUpdate(@){
 
 	
 	} else {
+		Log3 ($hash, 3, "$hash->{NAME} DEBUG: doInternalReadingsUpdate: no hsv in cmd hash.");  
 
 	# RAW mode is not yet done.
 	# I'll need to think of a way to at least approximate HSV values for this while taking into account WW/CW and so on.
@@ -782,8 +808,8 @@ LedController_RGB2HSV(@) {
 
     $val = int(($max / 10.23) + 0.5);
     $delta = $max - $min;
-	
-    my $currentHue = ReadingsVal($hash->{NAME}, "hue", 0) + 0;
+
+    my $currentHue = InternalVal($hash->{NAME}, "hueValue", 0) + 0;
     return ($currentHue, 0, $val) if (($max == 0) || ($delta == 0));
 
     $sat= int((($delta / $max) *100) + 0.5);
