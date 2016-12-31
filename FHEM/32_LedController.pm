@@ -460,10 +460,9 @@ LedController_ParseHSVColor(@) {
       $res = JSON->new->utf8(1)->decode($data);
     };
     if ($@) {
-     Log3 ($hash, 4, "$hash->{NAME}: error decoding HSV color response $@");
+      Log3 ($hash, 4, "$hash->{NAME}: error decoding HSV color response $@");
     } else {
- 		# not sure when this would happen
- 		# answer herrmannj: this is the place for a valid response, aka we got mail ;)
+      LedController_UpdateReadings($hash, $res->{hsv}->{h}, $res->{hsv}->{s}, $res->{hsv}->{v}, $res->{hsv}->{ct});
     } 
   } else {
     Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> retriving HSV color"); 
@@ -517,21 +516,28 @@ LedController_SetHSVColor(@) {
     # TODO consolidate into an "_setReadings" 
     # TODO move the call to the api result section and add error handling
     
-    my ($red, $green, $blue)=LedController_HSV2RGB($hue, $sat, $val);
-    my $xrgb=sprintf("%02x%02x%02x",$red,$green,$blue);
-    Log3 ($hash, 5, "$hash->{NAME}: calculated RGB as $xrgb");
-    Log3 ($hash, 4, "$hash->{NAME}: begin Readings Update\n   hue: $hue\n   sat: $sat\n   val:$val\n   ct : $colorTemp\n   HSV: $hue,$sat,$val\n   RGB: $xrgb");
-
-    readingsBeginUpdate($hash);
-    readingsBulkUpdate($hash, 'hue', $hue);
-    readingsBulkUpdate($hash, 'sat', $sat);
-    readingsBulkUpdate($hash, 'val', $val);
-    readingsBulkUpdate($hash, 'ct' , $colorTemp);
-    readingsBulkUpdate($hash, 'hsv', "$hue,$sat,$val");
-    readingsBulkUpdate($hash, 'rgb', $xrgb);
-    readingsBulkUpdate($hash, 'state', ($val== 0)?'off':'on');
-    readingsEndUpdate($hash, 1);
+    LedController_UpdateReadings($hash, $hue, $sat, $val, $colorTemp);
   }
+  return undef;
+}
+
+sub
+LedController_UpdateReadings(@) {
+  my ($hash, $hue, $sat, $val, $colorTemp) = @_;
+  my ($red, $green, $blue)=LedController_HSV2RGB($hue, $sat, $val);
+  my $xrgb=sprintf("%02x%02x%02x",$red,$green,$blue);
+  Log3 ($hash, 5, "$hash->{NAME}: calculated RGB as $xrgb");
+  Log3 ($hash, 4, "$hash->{NAME}: begin Readings Update\n   hue: $hue\n   sat: $sat\n   val:$val\n   ct : $colorTemp\n   HSV: $hue,$sat,$val\n   RGB: $xrgb");
+  
+  readingsBeginUpdate($hash);
+  readingsBulkUpdate($hash, 'hue', $hue);
+  readingsBulkUpdate($hash, 'sat', $sat);
+  readingsBulkUpdate($hash, 'val', $val);
+  readingsBulkUpdate($hash, 'ct' , $colorTemp);
+  readingsBulkUpdate($hash, 'hsv', "$hue,$sat,$val");
+  readingsBulkUpdate($hash, 'rgb', $xrgb);
+  readingsBulkUpdate($hash, 'state', ($val== 0)?'off':'on');
+  readingsEndUpdate($hash, 1);
   return undef;
 }
 
