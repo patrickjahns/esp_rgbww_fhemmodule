@@ -93,7 +93,7 @@ LedController_Set(@) {
 
 	my ($hash, $name, $cmd, @args) = @_;
   
-	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat val dim dimup dimdown on off rotate raw" if ($cmd eq '?');
+	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat stop val dim dimup dimdown on off rotate raw" if ($cmd eq '?');
 
    $hash->{helper}->{logLevel} = (AttrVal($hash->{NAME},"verbose",0)>$attr{global}{verbose})?AttrVal($hash->{NAME},"verbose",0):$attr{global}{verbose};
     Log3($hash,4, "\nglobal LogLevel: $attr{global}{verbose}\nmodule LogLevel: ".AttrVal($hash->{NAME},'verbose',0)."\ncompound LogLevel: $hash->{helper}->{logLevel}");	
@@ -308,7 +308,7 @@ LedController_Set(@) {
 		
 		my $val = ReadingsVal($hash->{NAME}, "val", 0);
 		my $sat = ReadingsVal($hash->{NAME}, "sat", 0);
-		Log3 ($hash, 5, "$hash->{NAME} setting HUE to $hue, keeping VAL $val and SAT $sat") if ($hash->{helper}->{logLevel} >= 5);
+		Log3 ($hash, 4, "$hash->{NAME} setting HUE to $hue, keeping VAL $val and SAT $sat");
 		Log3 ($hash, 5, "$hash->{NAME} got extended args: t = $fadeTime, q = $doQueue, d=$direction") if ($hash->{helper}->{logLevel} >= 5);
       
 		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
@@ -335,7 +335,17 @@ LedController_Set(@) {
 
 	} elsif ($cmd eq 'update') {
 		LedController_GetHSVColor($hash);
-	}
+
+	} elsif ($cmd eq 'stop') {
+        LedController_GetHSVColor_blocking($hash);
+   		my $val        = ReadingsVal($hash->{NAME}, "val", 0);
+		my $hue        = ReadingsVal($hash->{NAME}, "hue", 0);
+		my $sat        = ReadingsVal($hash->{NAME}, "sat", 0);
+		my $colorTemp  = ReadingsVal($hash->{NAME}, "ct",  0);
+		Log3 ($hash, 4, "$hash->{NAME} setting HUE to $hue, VAL to $val and SAT to $sat");
+        LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, 0, 'solid', 'false', 0);
+    }
+
 	return undef;
 }
 
@@ -446,6 +456,62 @@ LedController_GetHSVColor(@) {
 }
 
 sub
+LedController_GetHSVColor_blocking(@) {
+
+    my ($hash) = @_;
+    my $ip = $hash->{IP};
+    my $res;
+    my $param = {
+    url        => "http://$ip/color?mode=HSV",
+    timeout    => 2,
+    method     => "GET",
+    header     => "User-Agent: fhem\r\nAccept: application/json",
+    };
+
+    Log3 ($hash, 4, "$hash->{NAME}: get HSV color request (blocking)");
+
+    my ($err, $data) = HttpUtils_BlockingGet($param);
+
+    Log3 ($hash, 4, "$hash->{NAME}: got HSV color response (blocking)");
+     
+    if ($err) {
+       Log3 ($hash, 2, "$hash->{NAME}: error $err retriving HSV color");
+     } elsif ($data) {
+         Log3 ($hash, 5, "$hash->{NAME}: HSV color response data $data") if ($hash->{helper}->{logLevel} >= 5);
+       eval { 
+         $res = JSON->new->utf8(1)->decode($data);
+       };
+       if ($@) {
+         Log3 ($hash, 4, "$hash->{NAME}: error decoding HSV color response $@");
+       } else {
+         LedController_UpdateReadings($hash, $res->{hsv}->{h}, $res->{hsv}->{s}, $res->{hsv}->{v}, $res->{hsv}->{ct});
+       } 
+     } else {
+       Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> retriving HSV color"); 
+     }
+      return undef;
+}
+sub
+LedController_GetRAWColor(@) {
+
+  my ($hash) = @_;
+  my $ip = $hash->{IP};
+  
+  my $param = {
+    url        => "http://$ip/color?mode=RAW",
+    timeout    => 30,
+    hash       => $hash,
+    method     => "GET",
+    header     => "User-Agent: fhem\r\nAccept: application/json",
+    parser     =>  \&LedController_ParseRAWColor,
+    callback   =>  \&LedController_callback
+  };
+  Log3 ($hash, 4, "$hash->{NAME}: get RAW color request");
+  LedController_addCall($hash, $param);
+  return undef;
+}
+
+sub
 LedController_ParseHSVColor(@) {
 
   #my ($param, $err, $data) = @_;
@@ -474,9 +540,36 @@ LedController_ParseHSVColor(@) {
 }
 
 sub
+LedController_ParseRAWColor(@) {
+
+  #my ($param, $err, $data) = @_;
+  #my ($hash) = $param->{hash};
+  my ($hash, $err, $data) = @_;
+  my $res;
+  
+  Log3 ($hash, 4, "$hash->{NAME}: got RAW color response");
+  
+  if ($err) {
+    Log3 ($hash, 2, "$hash->{NAME}: error $err retriving RAW color");
+  } elsif ($data) {
+    eval { 
+      $res = JSON->new->utf8(1)->decode($data);
+    };
+    if ($@) {
+      Log3 ($hash, 4, "$hash->{NAME}: error decoding HSV color response $@");
+    } else {
+        my ($raw_r, $raw_g, $raw_b, $raw_ww, $raw_cw)=($res->{raw}->{r},$res->{raw}->{g},$res->{raw}->{b},$res->{raw}->{ww},$res->{raw}->{cw});
+        #LedController_UpdateReadings($hash, $res->{raw}->{r}, $res->{hsv}->{s}, $res->{hsv}->{v}, $res->{hsv}->{ct});
+    } 
+  } else {
+    Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> retriving HSV color"); 
+  }
+  return undef;
+}
+
+
+sub
 LedController_SetHSVColor(@) {
-
-
   my ($hash, $hue, $sat, $val, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction) = @_;
   Log3 ($hash, 5, "$hash->{NAME}: called SetHSVColor $hue, $sat, $val, $colorTemp, $fadeTime, $transitionType, $doQueue, $direction)") if ($hash->{helper}->{logLevel} >= 5);
   my $ip = $hash->{IP};
