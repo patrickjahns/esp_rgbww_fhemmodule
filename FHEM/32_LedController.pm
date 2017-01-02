@@ -3,7 +3,11 @@
 
 # TODO
 # I'm fully aware of this http://xkcd.com/1695/
-# 
+#  
+# * timer driven updates - InternalTimer(gettimeofday()+0.2, LedController_...
+#   -> start as soon as an animation is started
+#   -> stop when h,s,v have not changed for one timer cycle (we don't want to waste cycles when the lights are static)
+#   -> use the blocking update method in the feature_stop branch, check for issues with using blocking and non blocking http calls
 # 
 
 # versions
