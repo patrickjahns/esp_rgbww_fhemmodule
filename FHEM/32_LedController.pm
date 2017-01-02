@@ -78,6 +78,7 @@ LedController_Define($$) {
   
   @{$hash->{helper}->{cmdQueue}} = ();
   $hash->{helper}->{isBusy} = 0;
+  $hash->{helper}->{shouldStop} = 0;
   # TODO remove, fixeg loglevel 5 only for debugging
   #$attr{$hash->{NAME}}{verbose} = 3;
   LedController_GetConfig($hash);
@@ -97,7 +98,7 @@ LedController_Set(@) {
 
 	my ($hash, $name, $cmd, @args) = @_;
   
-	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat val dim dimup dimdown on off rotate raw" if ($cmd eq '?');
+	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat stop val dim dimup dimdown on off rotate raw" if ($cmd eq '?');
 
    $hash->{helper}->{logLevel} = (AttrVal($hash->{NAME},"verbose",0)>$attr{global}{verbose})?AttrVal($hash->{NAME},"verbose",0):$attr{global}{verbose};
     Log3($hash,4, "\nglobal LogLevel: $attr{global}{verbose}\nmodule LogLevel: ".AttrVal($hash->{NAME},'verbose',0)."\ncompound LogLevel: $hash->{helper}->{logLevel}");	
@@ -337,6 +338,10 @@ LedController_Set(@) {
 		my ($red, $green, $blue, $ww, $cw) = split ',',$args[0];
 		LedController_SetRAWColor($hash, $red, $green, $blue, $ww, $cw, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
 
+	} elsif ($cmd eq 'stop') {
+		Log3 ($hash, 4, "$hash->{NAME}: Setting should stop");
+		$hash->{helper}->{shouldStop} = 1;
+		LedController_GetHSVColor($hash);
 	} elsif ($cmd eq 'update') {
 		LedController_GetHSVColor($hash);
 	}
@@ -470,6 +475,11 @@ LedController_ParseHSVColor(@) {
       Log3 ($hash, 4, "$hash->{NAME}: error decoding HSV color response $@");
     } else {
       LedController_UpdateReadings($hash, $res->{hsv}->{h}, $res->{hsv}->{s}, $res->{hsv}->{v}, $res->{hsv}->{ct});
+      if ($hash->{helper}->{shouldStop}) {
+        Log3 ($hash, 4, "$hash->{NAME}: Stopping");
+        $hash->{helper}->{shouldStop} = 0;
+        LedController_SetHSVColor($hash, $res->{hsv}->{h}, $res->{hsv}->{s}, $res->{hsv}->{v}, $res->{hsv}->{ct}, 0, 'solid', 'false', 0);
+      }
     } 
   } else {
     Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> retriving HSV color"); 
