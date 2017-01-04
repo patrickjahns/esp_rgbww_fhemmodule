@@ -342,6 +342,7 @@ LedController_Set(@) {
 		Log3 ($hash, 4, "$hash->{NAME}: Setting should stop");
 		$hash->{helper}->{shouldStop} = 1;
 		LedController_GetHSVColor($hash);
+
 	} elsif ($cmd eq 'update') {
 		LedController_GetHSVColor($hash);
 	}
