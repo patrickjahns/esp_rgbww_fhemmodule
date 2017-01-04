@@ -1,2 +1,2 @@
 DEL ./FHEM/32_LedController.pm
-UPD 2016-06-25_08:19:55 47528 FHEM/32_LedController.pm
+UPD 2016-06-25_08:19:55 49525 FHEM/32_LedController.pm
