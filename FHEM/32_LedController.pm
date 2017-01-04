@@ -435,36 +435,73 @@ LedController_ParseConfig(@) {
 }
 
 sub
+LedController_GetHSVColor_blocking(@) {
+
+    my ($hash) = @_;
+    my $ip = $hash->{IP};
+    my $res;
+    my $param = {
+        url        => "http://$ip/color?mode=HSV",
+        timeout    => 2,
+        method     => "GET",
+        header     => "User-Agent: fhem\r\nAccept: application/json",
+    };
+
+    Log3 ($hash, 4, "$hash->{NAME}: get HSV color request (blocking)");
+
+    my ("rr, $data) = HttpUtils_BlockingGet($param);
+
+    Log3 ($hash, 4, "$hash->{NAME}: got HSV color response (blocking)");
+
+    if ("rr) {
+        Log3 ($hash, 2, "$hash->{NAME}: error "rr retriving HSV color");
+    } elsif ($data) {
+        Log3 ($hash, 5, "$hash->{NAME}: HSV color response data $data") if ($hash->{helper}->{logLevel} >= 5);
+        eval { 
+            $res = JSON->new->utf8(1)->decode($data);
+        };
+        if ($@) {
+            Log3 ($hash, 4, "$hash->{NAME}: error decoding HSV color response $@");
+        } else {
+            LedController_UpdateReadings($hash, $res->{hsv}->{h}, $res->{hsv}->{s}, $res->{hsv}->{v}, $res->{hsv}->{ct});
+        } 
+    } else {
+        Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> retriving HSV color"); 
+    }
+    return undef;
+}
+
+sub
 LedController_GetHSVColor(@) {
 
-  my ($hash) = @_;
-  my $ip = $hash->{IP};
-  
-  my $param = {
-    url        => "http://$ip/color?mode=HSV",
-    timeout    => 30,
-    hash       => $hash,
-    method     => "GET",
-    header     => "User-Agent: fhem\r\nAccept: application/json",
-    parser     =>  \&LedController_ParseHSVColor,
-    callback   =>  \&LedController_callback
-  };
-  Log3 ($hash, 4, "$hash->{NAME}: get HSV color request");
-  LedController_addCall($hash, $param);
-  return undef;
+my ($hash) = @_;
+my $ip = $hash->{IP};
+
+my $param = {
+url        => "http://$ip/color?mode=HSV",
+timeout    => 30,
+hash       => $hash,
+method     => "GET",
+header     => "User-Agent: fhem\r\nAccept: application/json",
+parser     =>  \&LedController_ParseHSVColor,
+callback   =>  \&LedController_callback
+};
+Log3 ($hash, 4, "$hash->{NAME}: get HSV color request");
+LedController_addCall($hash, $param);
+return undef;
 }
 
 sub
 LedController_ParseHSVColor(@) {
 
-  #my ($param, $err, $data) = @_;
-  #my ($hash) = $param->{hash};
-  my ($hash, $err, $data) = @_;
-  my $res;
-  
-  Log3 ($hash, 4, "$hash->{NAME}: got HSV color response");
-  
-  if ($err) {
+#my ($param, $err, $data) = @_;
+#my ($hash) = $param->{hash};
+my ($hash, $err, $data) = @_;
+my $res;
+
+Log3 ($hash, 4, "$hash->{NAME}: got HSV color response");
+
+if ($err) {
     Log3 ($hash, 2, "$hash->{NAME}: error $err retriving HSV color");
   } elsif ($data) {
       # Log3 ($hash, 5, "$hash->{NAME}: HSV color response data $data") if ($hash->{helper}->{logLevel} >= 5);
