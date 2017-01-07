@@ -1,5 +1,6 @@
 LedController last change:
 2017-01-07
- - Merge pull request #16 from patrickjahns/upstream
+ - Merge branch 'master' of https://github.com/patrickjahns/esp_rgbww_fhemmodule
 
-Upstream
+Conflicts:
+	controls_ledcontroller.txt
