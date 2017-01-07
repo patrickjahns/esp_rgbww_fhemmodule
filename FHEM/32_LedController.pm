@@ -450,11 +450,11 @@ LedController_GetHSVColor_blocking(@) {
 
     Log3 ($hash, 4, "$hash->{NAME}: get HSV color request (blocking)");
 
-    my ("rr, $data) = HttpUtils_BlockingGet($param);
+    my ($err, $data) = HttpUtils_BlockingGet($param);
 
     Log3 ($hash, 4, "$hash->{NAME}: got HSV color response (blocking)");
 
-    if ("rr) {
+    if ($err) {
         Log3 ($hash, 2, "$hash->{NAME}: error "rr retriving HSV color");
     } elsif ($data) {
         Log3 ($hash, 5, "$hash->{NAME}: HSV color response data $data") if ($hash->{helper}->{logLevel} >= 5);
