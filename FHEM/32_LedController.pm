@@ -448,26 +448,26 @@ LedController_GetHSVColor_blocking(@) {
         header     => "User-Agent: fhem\r\nAccept: application/json",
     };
 
-    Log3 ($hash, 4, "$hash->{NAME}: get HSV color request (blocking)");
+    Log3($hash, 4, "$hash->{NAME}: get HSV color request (blocking)");
 
     my ($err, $data) = HttpUtils_BlockingGet($param);
 
-    Log3 ($hash, 4, "$hash->{NAME}: got HSV color response (blocking)");
+    Log3($hash, 4, "$hash->{NAME}: got HSV color response (blocking)");
 
     if ($err) {
-        Log3 ($hash, 2, "$hash->{NAME}: error "rr retriving HSV color");
+        Log3($hash, 2, "$hash->{NAME}: error $err retrieving HSV color");
     } elsif ($data) {
         Log3 ($hash, 5, "$hash->{NAME}: HSV color response data $data") if ($hash->{helper}->{logLevel} >= 5);
         eval { 
             $res = JSON->new->utf8(1)->decode($data);
         };
         if ($@) {
-            Log3 ($hash, 4, "$hash->{NAME}: error decoding HSV color response $@");
+            Log3($hash, 4, "$hash->{NAME}: error decoding HSV color response $@");
         } else {
             LedController_UpdateReadings($hash, $res->{hsv}->{h}, $res->{hsv}->{s}, $res->{hsv}->{v}, $res->{hsv}->{ct});
         } 
     } else {
-        Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> retriving HSV color"); 
+        Log3($hash, 2, "$hash->{NAME}: error <empty data received> retriving HSV color"); 
     }
     return undef;
 }
