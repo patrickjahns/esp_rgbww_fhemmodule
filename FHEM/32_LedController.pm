@@ -79,6 +79,7 @@ LedController_Define($$) {
   @{$hash->{helper}->{cmdQueue}} = ();
   $hash->{helper}->{isBusy} = 0;
   $hash->{helper}->{shouldStop} = 0;
+  LedController_UpdateLogLevel($hash);
   # TODO remove, fixeg loglevel 5 only for debugging
   #$attr{$hash->{NAME}}{verbose} = 3;
   LedController_GetConfig($hash);
@@ -94,13 +95,20 @@ LedController_Undef(@) {
 }
 
 sub
+LedController_UpdateLogLevel(@) {
+  my ($hash) = @_;
+  $hash->{helper}->{logLevel} = (AttrVal($hash->{NAME},"verbose",0)>$attr{global}{verbose})?AttrVal($hash->{NAME},"verbose",0):$attr{global}{verbose};
+  return undef;
+}
+
+sub
 LedController_Set(@) {
 
 	my ($hash, $name, $cmd, @args) = @_;
   
 	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat stop val dim dimup dimdown on off rotate raw" if ($cmd eq '?');
 
-   $hash->{helper}->{logLevel} = (AttrVal($hash->{NAME},"verbose",0)>$attr{global}{verbose})?AttrVal($hash->{NAME},"verbose",0):$attr{global}{verbose};
+    LedController_UpdateLogLevel($hash);
     Log3($hash,4, "\nglobal LogLevel: $attr{global}{verbose}\nmodule LogLevel: ".AttrVal($hash->{NAME},'verbose',0)."\ncompound LogLevel: $hash->{helper}->{logLevel}");	
 	# $colorTemp : Color temperature in Kelvin (K). Can be set in attr. Default 2700K.
 	# Note: rangeCheck is performed in attr method, so a simple AttrVal with 2700 as default value is enough here.
