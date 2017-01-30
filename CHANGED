@@ -1,5 +1,5 @@
 LedController last change:
-2017-01-07
- - fixed typo
- - Merge branch 'master' of https://github.com/patrickjahns/esp_rgbww_fhemmodule
+2017-01-30
+ - Merge pull request #21 from ShuzzDE/develop
 
+Asynchronous update of readings
