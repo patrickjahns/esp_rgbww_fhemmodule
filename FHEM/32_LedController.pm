@@ -34,6 +34,7 @@ use Time::HiRes qw(time);
 use JSON;
 use JSON::XS;
 use Data::Dumper;
+use Color;
 
 $Data::Dumper::Indent = 1;
 $Data::Dumper::Sortkeys = 1;
@@ -51,7 +52,10 @@ LedController_Initialize(@) {
   $hash->{AttrFn}               = 'LedController_Attr';
   $hash->{NotifyFn}             = 'LedController_Notify';
   $hash->{ReadFn}               = 'LedController_Read';
-  $hash->{AttrList}     = "defaultRamp defaultColor defaultHue defaultSat defaultVal colorTemp"
+  $hash->{AttrList}     = "defaultRamp defaultColor defaultHue defaultSat defaultVal colorTemp "
+  								 ."outputMode hsvModel biasRed biasYellow biasGreen biasCyan biasBlue biasMagenta "
+  								 ."brightnessRed brightnessGreen brightnessBlue brightnessWW brightnessCW "
+  								 ."colorTempWW colorTempCW"
                           ." $readingFnAttributes";
   require "HttpUtils.pm";
   
@@ -83,7 +87,11 @@ LedController_Define($$) {
   LedController_UpdateLogLevel($hash);
   # TODO remove, fixeg loglevel 5 only for debugging
   #$attr{$hash->{NAME}}{verbose} = 5;
-  LedController_GetConfig($hash);
+  LedController_GetInfo($hash);
+  
+  #Log3($hash, 5,"$name: ".Dumper($hash));
+  LedController_PushConfig($hash);
+  
   $hash->{helper}->{oldVal}	  = 100;
   return undef;
   return "wrong syntax: define <name> LedController <type> <ip-or-hostname>" if(@a != 4);  
@@ -380,6 +388,13 @@ LedController_Get(@) {
   my ($hash, $name, $cmd, @args) = @_;
   my $cnt = @args;
   
+  return "Unknown argument $cmd, choose one of config" if ($cmd eq '?');
+
+  Log3($hash, 4, "$hash->{NAME}: get called with cmd: $cmd");
+  if ($cmd eq 'config'){
+      Log3($hash, 4, "$hash->{NAME}: callign GetInfo");
+      LedController_GetConfig($hash);
+      }
   return undef;
 }
 
@@ -390,10 +405,13 @@ LedController_Attr(@) {
   my $hash = $defs{$device};
 
   if ($cmd eq 'set' && $attribName eq 'colorTemp'){
-  return "colorTemp must be between 2000 and 10000" if ! LedController_rangeCheck($attribVal, 2000, 10000);
+  	return "colorTemp must be between 2700 and 6000" if ! LedController_rangeCheck($attribVal, 2000, 10000);
   }
+  
   # TODO: Add checks for defaultColor, defaultHue/Sat/Val here!
   Log3 ($hash, 4, "$hash->{NAME} attrib $attribName $cmd $attribVal") if $attribVal && ($hash->{helper}->{logLevel} >= 4); 
+  
+  LedController_PushConfig($hash);
   return undef;
 }
 
@@ -407,7 +425,7 @@ LedController_Notify(@) {
 }
 
 sub
-LedController_GetConfig(@) {
+LedController_GetInfo(@) {
 
   my ($hash) = @_;
   my $ip = $hash->{IP};
@@ -418,10 +436,111 @@ LedController_GetConfig(@) {
     hash       => $hash,
     method     => "GET",
     header     => "User-Agent: fhem\r\nAccept: application/json",
+    parser     =>  \&LedController_ParseInfo,
+    callback   =>  \&LedController_callback
+  };
+  Log3 ($hash, 4, "$hash->{NAME}: get info request") if ($hash->{helper}->{logLevel} >= 4);
+  LedController_addCall($hash, $param);
+  return undef;
+}
+
+sub
+LedController_ParseInfo(@) {
+
+  #my ($param, $err, $data) = @_;
+  #my ($hash) = $param->{hash};
+  my ($hash, $err, $data) = @_;
+  my $res;
+  
+  Log3 ($hash, 4, "$hash->{NAME}: got info response") if ($hash->{helper}->{logLevel} >= 4);
+  
+  if ($err) {
+    Log3 ($hash, 2, "$hash->{NAME}: error $err retriving config");
+  } elsif ($data) {
+    Log3 ($hash, 5, "$hash->{NAME}: info response data $data") if ($hash->{helper}->{logLevel} >= 5);
+    eval { 
+    	# TODO: Can't we just store the instance of the JSON parser somewhere?
+    	# Would that improve performance???
+      $res = JSON->new->utf8(1)->decode($data);
+    };
+    if ($@) {
+     Log3 ($hash, 2, "$hash->{NAME}: error decoding config response $@");
+    } else {
+      $hash->{DEVICEID} = $res->{deviceid};
+      $hash->{FIRMWARE} = $res->{firmware};
+      $hash->{MAC} = $res->{connection}->{mac};
+      LedController_GetHSVColor($hash);
+    } 
+  } else {
+    Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> retriving config"); 
+  }
+  return undef;
+}
+
+sub
+LedController_PushConfig(@){
+  my ($hash)=@_;
+  
+  my $mode=AttrVal($hash->{NAME},"outputMode","");
+  if($mode eq "RGB"){
+	  $hash->{config}->{outputMode}=0;
+  }elsif($mode eq "RGBWW"){
+	  $hash->{config}->{outputMode}=1;
+  }elsif($mode eq "RGBCW"){
+	  $hash->{config}->{outputMode}=2;
+  }elsif($mode eq "RGBWWCW"){
+	  $hash->{config}->{outputMode}=3;
+  }else{
+	  return "$mode is not supported by LedController";
+  }
+  
+  my $model=AttrVal($hash->{NAME},'hsvModel',"");
+  if($model eq "Normal"){
+		$hash->{config}->{hsvModel}=0;  
+  }elsif($model eq "Spectrum"){
+		$hash->{config}->{hsvModel}=1;  
+  }elsif($model eq "Rainbow"){
+		$hash->{config}->{hsvModel}=2;  
+  }else{
+	  return "$model is not supported by LedController";
+  }
+  
+  $hash->{config}->{Bias}->{red}    = AttrVal($hash->{NAME},'biasRed'    ,0);
+  $hash->{config}->{Bias}->{yellow} = AttrVal($hash->{NAME},'biasYellow' ,0);
+  $hash->{config}->{Bias}->{green}  = AttrVal($hash->{NAME},'biasGreen'  ,0);
+  $hash->{config}->{Bias}->{cyan}   = AttrVal($hash->{NAME},'biasCyan'   ,0);
+  $hash->{config}->{Bias}->{blue}   = AttrVal($hash->{NAME},'biasBlue'   ,0);
+  $hash->{config}->{Bias}->{magenta}= AttrVal($hash->{NAME},'biasMagenta',0);
+
+  $hash->{config}->{Brightness}->{red}   = AttrVal($hash->{NAME},'brightnessRed'   ,100);
+  $hash->{config}->{Brightness}->{green} = AttrVal($hash->{NAME},'brightnessGreen' ,100);
+  $hash->{config}->{Brightness}->{blue}  = AttrVal($hash->{NAME},'brightnessBlue'  ,100);
+  $hash->{config}->{Brightness}->{ww}    = AttrVal($hash->{NAME},'brightnessWW'    ,100);
+  $hash->{config}->{Brightness}->{cw}    = AttrVal($hash->{NAME},'brightnessCW'    ,100);
+
+  $hash->{config}->{colorTemp}->{ww}     = AttrVal($hash->{NAME},'colorTempWW',2700);
+  $hash->{config}->{colorTemp}->{cw}     = AttrVal($hash->{NAME},'colorTempCW',6000);
+
+  Log3($hash,5,"$hash->{NAME}: pushing config ".Dumper($hash->{config}));
+  LedController_SetConfig($hash, $hash->{config});    
+}
+sub
+LedController_GetConfig(@) {
+
+  my ($hash) = @_;
+  my $ip = $hash->{IP};
+  
+  my $param = {
+    url        => "http://$ip/config",
+    timeout    => 30,
+    hash       => $hash,
+    method     => "GET",
+    header     => "User-Agent: fhem\r\nAccept: application/json",
     parser     =>  \&LedController_ParseConfig,
     callback   =>  \&LedController_callback
   };
   Log3 ($hash, 4, "$hash->{NAME}: get config request") if ($hash->{helper}->{logLevel} >= 4);
+  Log3 ($hash, 5, "$hash->{NAME}: config dump:".Dumper($param)) if ($hash->{helper}->{logLevel} >= 5);
   LedController_addCall($hash, $param);
   return undef;
 }
@@ -448,15 +567,111 @@ LedController_ParseConfig(@) {
     if ($@) {
      Log3 ($hash, 2, "$hash->{NAME}: error decoding config response $@");
     } else {
-      $hash->{DEVICEID} = $res->{deviceid};
-      $hash->{FIRMWARE} = $res->{firmware};
-      $hash->{MAC} = $res->{connection}->{mac};
-      LedController_GetHSVColor($hash);
+      $hash->{config}->{outputMode}     = $res->{color}->{outputmode};
+      $hash->{config}->{hsvModel}       = $res->{color}->{hsv}->{model};
+      $hash->{config}->{Bias}->{red}    = $res->{color}->{hsv}->{red};
+      $hash->{config}->{Bias}->{yellow} = $res->{color}->{hsv}->{yellow};
+      $hash->{config}->{Bias}->{green}  = $res->{color}->{hsv}->{green};
+      $hash->{config}->{Bias}->{cyan}   = $res->{color}->{hsv}->{cyan};
+      $hash->{config}->{Bias}->{blue}   = $res->{color}->{hsv}->{blue};
+      $hash->{config}->{Bias}->{magenta}= $res->{color}->{hsv}->{magenta};
+
+      $hash->{config}->{Brightness}->{red}   = $res->{color}->{brightness}->{red};
+      $hash->{config}->{Brightness}->{green} = $res->{color}->{brightness}->{green};
+      $hash->{config}->{Brightness}->{blue}  = $res->{color}->{brightness}->{blue};
+      $hash->{config}->{Brightness}->{ww}    = $res->{color}->{brightness}->{ww};
+      $hash->{config}->{Brightness}->{cw}    = $res->{color}->{brightness}->{cw};
+
+      $hash->{config}->{colorTemp}->{ww}     = $res->{color}->{colortemp}->{ww};
+      $hash->{config}->{colorTemp}->{cw}     = $res->{color}->{colortemp}->{cw};
+      Log3($hash,5,"$hash->{NAME} read ".Dumper($hash->{config}));
+
+      #LedController_GetHSVColor($hash);
+      return Dumper($hash->{config});
     } 
   } else {
     Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> retriving config"); 
   }
   return undef;
+}
+
+sub
+LedController_SetConfig(@) {
+
+  my($hash, $config) = @_;
+  Log3 ($hash, 5, "$hash->{NAME}: called SetConfig with".Dumper($config)) if ($hash->{helper}->{logLevel} >= 5);
+  my $ip = $hash->{IP};
+  my $data; 
+  my $cmd;
+  
+  $cmd->{color}->{outputmode}     = $config->{outputMode}      if defined($config->{outputMode});
+  $cmd->{color}->{hsv}->{model}   = $config->{hsvModel}        if defined($config->{hsvModel});
+  $cmd->{color}->{hsv}->{red}     = $config->{Bias}->{red}     if defined($config->{Bias}->{red});
+  $cmd->{color}->{hsv}->{yellow}  = $config->{Bias}->{yellow}  if defined($config->{Bias}->{yellow});
+  $cmd->{color}->{hsv}->{green}   = $config->{Bias}->{green}   if defined($config->{Bias}->{green});
+  $cmd->{color}->{hsv}->{cyan}    = $config->{Bias}->{cyan}    if defined($config->{Bias}->{cyan});
+  $cmd->{color}->{hsv}->{blue}    = $config->{Bias}->{blue}    if defined($config->{Bias}->{blue});
+  $cmd->{color}->{hsv}->{magenta} = $config->{Bias}->{magenta} if defined($config->{Bias}->{magenta});
+  
+  $cmd->{color}->{brightness}->{red}   = $config->{Brightnes}->{red}   if defined($config->{Brightnes}->{red});
+  $cmd->{color}->{brightness}->{green} = $config->{Brightnes}->{green} if defined($config->{Brightnes}->{green});
+  $cmd->{color}->{brightness}->{blue}  = $config->{Brightnes}->{blue}  if defined($config->{Brightnes}->{blue});
+  $cmd->{color}->{brightness}->{ww}    = $config->{Brightnes}->{ww}    if defined($config->{Brightnes}->{ww});
+  $cmd->{color}->{brightness}->{cw}    = $config->{Brightnes}->{cw}    if defined($config->{Brightnes}->{cw});
+  
+  $cmd->{color}->{colortemp}->{ww} = $config->{colorTemp}->{ww} if defined($config->{colorTemp}->{ww});
+  $cmd->{color}->{colortemp}->{cw} = $config->{colorTemp}->{cw} if defined($config->{colorTemp}->{ww});
+  
+  eval { 
+    $data = JSON->new->utf8(1)->encode($cmd);
+  };
+  if ($@) {
+    Log3 ($hash, 2, "$hash->{NAME}: error encoding HSV color request $@");
+  } else {
+      #Log3 ($hash, 4, "$hash->{NAME}: encoded json data: $data ");
+    
+    my $param = {
+      url        => "http://$ip/config",
+      data       => $data,
+	  cmd		 => $cmd,
+      timeout    => 30,
+      hash       => $hash,
+      method     => "POST",
+      header     => "User-Agent: fhem\r\nAccept: application/json",
+      parser     =>  \&LedController_ParseSetHSVColor,
+      callback   =>  \&LedController_callback,
+      loglevel   => 5
+    };
+    
+    Log3 ($hash, 5, "$hash->{NAME}: set HSV color request \n$param") if ($hash->{helper}->{logLevel}>=5);
+    LedController_addCall($hash, $param);  
+  }
+  return undef;
+}
+
+sub
+LedController_ParseSetConfig(@) {
+
+	#my ($param, $err, $data) = @_;
+	#my ($hash) = $param->{hash};
+	my ($hash, $err, $data) = @_;
+	my $res;
+	
+	Log3 ($hash, 4, "$hash->{NAME}: got HSV color response");
+	$hash->{helper}->{isBusy}=0;
+	if ($err) {
+		Log3 ($hash, 2, "$hash->{NAME}: error $err setting HSV color");
+	} elsif ($data) {
+      eval { 
+			$res = JSON->new->utf8(1)->decode($data);
+		};
+		if ($@) {
+			Log3 ($hash, 2, "$hash->{NAME}: error decoding config response $@");
+		} 
+	} else {
+		Log3 ($hash, 2, "$hash->{NAME}: error <empty data received> setting config"); 
+	}
+	return undef;
 }
 
 sub
