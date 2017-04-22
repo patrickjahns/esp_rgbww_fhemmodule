@@ -107,13 +107,16 @@ LedController_Set(@) {
 
 	my ($hash, $name, $cmd, @args) = @_;
   
-	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat stop val dim dimup dimdown on off rotate raw" if ($cmd eq '?');
+	return "Unknown argument $cmd, choose one of hsv rgb state update hue sat stop val dim dimup dimdown on off rotate raw ct" if ($cmd eq '?');
 
     LedController_UpdateLogLevel($hash);
     Log3($hash,4, "\nglobal LogLevel: $attr{global}{verbose}\nmodule LogLevel: ".AttrVal($hash->{NAME},'verbose',0)."\ncompound LogLevel: $hash->{helper}->{logLevel}");	
-	# $colorTemp : Color temperature in Kelvin (K). Can be set in attr. Default 2700K.
+	# $colorTemp :  ColorTemp in Kelvin, can be set through an ATTR or by the set ct command. Values are between 2000 and 10000k
 	# Note: rangeCheck is performed in attr method, so a simple AttrVal with 2700 as default value is enough here.
-	my $colorTemp = AttrVal($hash->{NAME},'colorTemp',2700);
+    # fetch it from Readings, if Readings are not provided, fetch it from Attr, otherwise default to 2700.
+    # I'm not 100% sure if this is the right way round, since when it's in the Readings, the Attribute won't overwrite...
+    # Alas, when we read the Attribute first, the module will default back to them whenever. 
+	my $colorTemp = ReadingsVal($hash->{NAME},'ct',AttrVal($hash->{NAME},'colorTemp',2700));
 	
 	
 	Log3 ($hash, 5, "$hash->{NAME} (Set) called with $cmd, busy flag is $hash->{helper}->{isBusy}\n name is $name, args ".Dumper(@args)) if ($hash->{helper}->{logLevel}>=5);
@@ -132,7 +135,21 @@ LedController_Set(@) {
         ($fadeTime, $doQueue, $direction) = LedController_ArgsHelper($hash, $args[1], $args[2]);
     }
 
-	
+	if ($cmd eq 'ct'){
+        my $colorTemp=$args[0];#
+        if(!LedController_rangeCheck($colorTemp,2000,10000)){
+            Log3 ($hash, 3, "$hash->{NAME} colorTemp must be a number from 2000-10000");
+            return "$hash->{NAME} colorTemp must be a number from 2000-10000";
+        }
+		# get current hsv from Readings
+	  	my $hue = InternalVal($hash->{NAME}, "hueValue", 0);
+		my $val = InternalVal($hash->{NAME}, "valValue", 0);
+		my $sat = InternalVal($hash->{NAME}, "satValue", 0);
+
+		LedController_SetHSVColor($hash, $hue, $sat, $val, $colorTemp, $fadeTime, (($fadeTime==0)?'solid':'fade'), $doQueue, $direction);
+
+    }
+
 	if ($cmd eq 'hsv') {
 		# expected args: <hue:0-360>,<sat:0-100>,<val:0-100>
 		# HSV color values --> $hue, $sat and $val are split from arg1
@@ -948,17 +965,19 @@ LedController_ArgsHelper(@) {
 	Log3 ($hash, 5, "$hash->{NAME} t= $fadeTime") if ($hash->{helper}->{logLevel} >= 5);
 	my $doQueue = 'false';
 	my $d = '1';
-	if(LedController_isNumeric($a)){
-		$fadeTime=$a*1000;
-		Log3 ($hash, 5, "$hash->{NAME} a is numeric ($a), t= $fadeTime") if ($hash->{helper}->{logLevel} >= 5);
-			if ($b ne ''){
-				$doQueue = ($b =~m/.*[qQ].*/)?'true':'false';
-				$d = ($b =~m/.*[lL].*/)?0:1;
-			}		
-		}else{
-			$doQueue = ($a =~m/.*[qQ].*/)?'true':'false';
-			$d = ($a =~m/.*[lL].*/)?0:1;
-		}
+    if(defined $a){
+        if(LedController_isNumeric($a)){
+            $fadeTime=$a*1000;
+            Log3 ($hash, 5, "$hash->{NAME} a is numeric ($a), t= $fadeTime") if ($hash->{helper}->{logLevel} >= 5);
+                if (defined $b and $b ne ''){
+                    $doQueue = ($b =~m/.*[qQ].*/)?'true':'false';
+                    $d = ($b =~m/.*[lL].*/)?0:1;
+                }		
+            }else{
+                $doQueue = ($a =~m/.*[qQ].*/)?'true':'false';
+                $d = ($a =~m/.*[lL].*/)?0:1;
+            }
+        }
 	Log3 ($hash, 5, "$hash->{NAME} extended args: t = $fadeTime, q = $doQueue, d = $d") if ($hash->{helper}->{logLevel} >= 5);
 	return ($fadeTime, $doQueue, $d);
 }
