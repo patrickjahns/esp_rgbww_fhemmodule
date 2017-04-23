@@ -111,7 +111,7 @@ LedController_Set(@) {
 
     LedController_UpdateLogLevel($hash);
     Log3($hash,4, "\nglobal LogLevel: $attr{global}{verbose}\nmodule LogLevel: ".AttrVal($hash->{NAME},'verbose',0)."\ncompound LogLevel: $hash->{helper}->{logLevel}");	
-	# $colorTemp :  ColorTemp in Kelvin, can be set through an ATTR or by the set ct command. Values are between 2000 and 10000k
+	# $colorTemp :  ColorTemp in Kelvin, can be set through an ATTR or by the set ct command. Values are between 2000 and 6000
 	# Note: rangeCheck is performed in attr method, so a simple AttrVal with 2700 as default value is enough here.
     # fetch it from Readings, if Readings are not provided, fetch it from Attr, otherwise default to 2700.
     # I'm not 100% sure if this is the right way round, since when it's in the Readings, the Attribute won't overwrite...
@@ -137,9 +137,9 @@ LedController_Set(@) {
 
 	if ($cmd eq 'ct'){
         my $colorTemp=$args[0];#
-        if(!LedController_rangeCheck($colorTemp,2000,10000)){
-            Log3 ($hash, 3, "$hash->{NAME} colorTemp must be a number from 2000-10000");
-            return "$hash->{NAME} colorTemp must be a number from 2000-10000";
+        if(!LedController_rangeCheck($colorTemp,2000,6000)){
+            Log3 ($hash, 3, "$hash->{NAME} colorTemp must be a number from 2000-6000");
+            return "$hash->{NAME} colorTemp must be a number from 2000-6000";
         }
 		# get current hsv from Readings
 	  	my $hue = InternalVal($hash->{NAME}, "hueValue", 0);
@@ -390,7 +390,7 @@ LedController_Attr(@) {
   my $hash = $defs{$device};
 
   if ($cmd eq 'set' && $attribName eq 'colorTemp'){
-  return "colorTemp must be between 2000 and 10000" if ! LedController_rangeCheck($attribVal, 2000, 10000);
+  return "colorTemp must be between 2000 and 6000" if ! LedController_rangeCheck($attribVal, 2000, 6000);
   }
   # TODO: Add checks for defaultColor, defaultHue/Sat/Val here!
   Log3 ($hash, 4, "$hash->{NAME} attrib $attribName $cmd $attribVal") if $attribVal && ($hash->{helper}->{logLevel} >= 4); 
