@@ -1,5 +1,5 @@
 LedController last change:
+2017-04-25
+ - Merge pull request #22 from ShuzzDE/develop
 
-2017-01-31
- - Merge pull request #6 from patrickjahns/develop
-
+Fixed bounds checking for colorTemp attribute
