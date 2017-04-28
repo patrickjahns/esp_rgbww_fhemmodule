@@ -1,4 +1,5 @@
 LedController last change:
-2017-04-23
- - added set command for colorTemp (ct) and also fixed minor annoyance in argsHelper (warning for undefined variable)
+2017-04-28
+ - Merge pull request #23 from patrickjahns/feature_set_ct
 
+Feature set ct
