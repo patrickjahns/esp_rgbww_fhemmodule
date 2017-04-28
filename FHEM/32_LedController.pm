@@ -389,10 +389,10 @@ LedController_Attr(@) {
   my ($cmd, $device, $attribName, $attribVal) = @_;
   my $hash = $defs{$device};
 
-  return "colorTemp must be a value from 2700 to 6000, inclusively." if ! LedController_rangeCheck($attribVal, 2700, 6000);
+  #return "colorTemp must be a value from 2700 to 6000, inclusively." if ! LedController_rangeCheck($attribVal, 2700, 6000);
   if ($cmd eq 'set' && $attribName eq 'colorTemp'){
 
-  return "colorTemp must be between 2000 and 6000" if ! LedController_rangeCheck($attribVal, 2000, 6000);
+  return "colorTemp must be between 2700 and 6000" if ! LedController_rangeCheck($attribVal, 2700, 6000);
 
   }
   # TODO: Add checks for defaultColor, defaultHue/Sat/Val here!
