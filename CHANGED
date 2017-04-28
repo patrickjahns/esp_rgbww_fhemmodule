@@ -1,5 +1,4 @@
 LedController last change:
-2017-04-25
- - Merge pull request #22 from ShuzzDE/develop
+2017-04-23
+ - added set command for colorTemp (ct) and also fixed minor annoyance in argsHelper (warning for undefined variable)
 
-Fixed bounds checking for colorTemp attribute
