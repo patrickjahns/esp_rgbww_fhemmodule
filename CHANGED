@@ -1,5 +1,3 @@
 LedController last change:
-2017-04-28
- - Merge pull request #23 from patrickjahns/feature_set_ct
-
-Feature set ct
+2017-04-29
+ - fixed bug in LedController_Attr function that performed rangecheck 2700-6000 on all attributes instead of just on ct
